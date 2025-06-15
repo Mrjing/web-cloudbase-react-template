@@ -3845,13 +3845,8 @@ export default class GameScene extends Phaser.Scene {
 			(processedItem.type === 'burnt_tomato' ||
 				processedItem.type === 'burnt_lettuce');
 
-		// 只有在没有烤糊食物时才恢复正常纹理
-		if (!hasBurntFood) {
-			station.setTexture('cooking_station'); // 恢复正常纹理
-		} else {
-			// 有烤糊食物时保持着火纹理，但设置为不着火状态
-			station.setTexture('fire_cooking_station');
-		}
+		// 灭火后总是恢复正常纹理，不管是否有烤糊食物
+		station.setTexture('cooking_station');
 
 		// 灭火器不消耗，玩家继续持有
 		// this.playerHolding = null; // 移除这行，让玩家继续持有灭火器
