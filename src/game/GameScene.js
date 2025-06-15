@@ -1200,6 +1200,12 @@ export default class GameScene extends Phaser.Scene {
 			console.log('📦 同步地面物品:', gameState.groundItems);
 			this.updateGroundItemsFromServer(gameState.groundItems);
 		}
+
+		// 同步灭火器状态
+		if (gameState.extinguisher) {
+			console.log('🧯 同步灭火器状态:', gameState.extinguisher);
+			this.updateExtinguisherFromServer(gameState.extinguisher);
+		}
 	}
 
 	// 从服务器更新工作台状态
@@ -1559,6 +1565,68 @@ export default class GameScene extends Phaser.Scene {
 		});
 	}
 
+	// 从服务器更新灭火器状态
+	updateExtinguisherFromServer(serverExtinguisher) {
+		// 安全检查：确保extinguisher对象已经初始化
+		if (!this.extinguisher || !this.extinguisher.children) {
+			console.warn('⚠️ extinguisher对象未初始化，跳过更新:', {
+				extinguisherExists: !!this.extinguisher,
+				childrenExists: this.extinguisher
+					? !!this.extinguisher.children
+					: false,
+			});
+			return;
+		}
+
+		if (!serverExtinguisher) {
+			console.warn('⚠️ 服务器灭火器数据为空，跳过更新');
+			return;
+		}
+
+		// 获取本地灭火器对象（应该只有一个）
+		const localExtinguisher = this.extinguisher.children.entries[0];
+		if (!localExtinguisher) {
+			console.warn('⚠️ 本地灭火器对象不存在');
+			return;
+		}
+
+		console.log('🧯 更新本地灭火器状态:', {
+			serverState: serverExtinguisher,
+			currentPosition: { x: localExtinguisher.x, y: localExtinguisher.y },
+			currentVisible: localExtinguisher.visible,
+			currentActive: localExtinguisher.active,
+		});
+
+		// 更新灭火器位置
+		if (serverExtinguisher.position) {
+			localExtinguisher.setPosition(
+				serverExtinguisher.position.x,
+				serverExtinguisher.position.y
+			);
+		}
+
+		// 更新可见性和活跃状态
+		if (serverExtinguisher.visible !== undefined) {
+			localExtinguisher.setVisible(serverExtinguisher.visible);
+		}
+		if (serverExtinguisher.active !== undefined) {
+			localExtinguisher.setActive(serverExtinguisher.active);
+		}
+
+		// 强制更新物理体位置（确保碰撞检测正确）
+		if (localExtinguisher.body) {
+			localExtinguisher.body.updateFromGameObject();
+		}
+
+		console.log('✅ 灭火器状态更新完成:', {
+			newPosition: { x: localExtinguisher.x, y: localExtinguisher.y },
+			visible: localExtinguisher.visible,
+			active: localExtinguisher.active,
+			isHeld: serverExtinguisher.isHeld,
+			heldBy: serverExtinguisher.heldBy,
+		});
+	}
+
 	// 通过位置查找工作台
 	findStationByPosition(position) {
 		// 参数验证
@@ -1799,6 +1867,31 @@ export default class GameScene extends Phaser.Scene {
 			this.groundItemIdMap.delete(groundItem);
 		} catch (error) {
 			console.error('❌ 地面物品移除同步失败:', error);
+		}
+	}
+
+	// 同步灭火器状态
+	async syncExtinguisherState(position, isHeld, visible = true, active = true) {
+		if (this.gameMode !== 'multiplayer') return;
+
+		const extinguisherData = {
+			position: position,
+			isHeld: isHeld,
+			visible: visible,
+			active: active,
+		};
+
+		try {
+			const result = await multiplayerManager.syncPlayerAction(
+				'extinguisherUpdate',
+				extinguisherData
+			);
+			console.log('✅ 灭火器状态同步成功:', {
+				extinguisherData,
+				result: result?.result,
+			});
+		} catch (error) {
+			console.error('❌ 灭火器状态同步失败:', error);
 		}
 	}
 
@@ -3015,12 +3108,18 @@ export default class GameScene extends Phaser.Scene {
 					playerHolding: this.playerHolding,
 				});
 
-				this.showMessage('拾取了灭火器，去灭火吧！', 0x2ed573);
-
-				// 多人游戏：同步手持物品状态
+				// 多人游戏：同步灭火器状态（被拾取）
 				if (this.gameMode === 'multiplayer') {
-					this.syncPlayerPosition();
+					this.syncExtinguisherState(
+						{ x: extinguisher.x, y: extinguisher.y },
+						true, // isHeld = true
+						false, // visible = false
+						true // active = true
+					);
+					this.syncPlayerPosition(); // 同步手持物品
 				}
+
+				this.showMessage('拾取了灭火器，去灭火吧！', 0x2ed573);
 
 				// 发送游戏状态更新事件
 				this.emitGameStateUpdate();
@@ -3063,6 +3162,16 @@ export default class GameScene extends Phaser.Scene {
 								: null,
 						});
 
+						// 多人游戏：同步灭火器状态（被放下）
+						if (this.gameMode === 'multiplayer') {
+							this.syncExtinguisherState(
+								{ x: playerX, y: playerY },
+								false, // isHeld = false
+								true, // visible = true
+								true // active = true
+							);
+						}
+
 						this.showMessage('放下了灭火器', 0x2ed573);
 					} else {
 						// 如果没有保存的对象引用，创建新的灭火器（向后兼容）
@@ -3075,6 +3184,16 @@ export default class GameScene extends Phaser.Scene {
 							visible: true,
 							active: true,
 						});
+
+						// 多人游戏：同步灭火器状态（新创建）
+						if (this.gameMode === 'multiplayer') {
+							this.syncExtinguisherState(
+								{ x: playerX, y: playerY },
+								false, // isHeld = false
+								true, // visible = true
+								true // active = true
+							);
+						}
 
 						this.showMessage('放下了灭火器', 0x2ed573);
 					}

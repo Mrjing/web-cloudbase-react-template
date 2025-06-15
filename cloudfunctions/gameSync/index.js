@@ -363,6 +363,31 @@ async function syncPlayerAction(event) {
 				needsUpdate = true;
 				break;
 
+			case 'extinguisherUpdate':
+				// 更新灭火器状态
+				if (!room.data.gameState) {
+					updateData.gameState = {};
+				}
+
+				const extinguisherState = {
+					position: actionData.position,
+					isHeld: actionData.isHeld || false,
+					heldBy: actionData.isHeld ? playerId : null,
+					visible: actionData.visible !== undefined ? actionData.visible : true,
+					active: actionData.active !== undefined ? actionData.active : true,
+					updatedBy: playerId,
+					updatedAt: new Date(),
+				};
+
+				updateData['gameState.extinguisher'] = extinguisherState;
+				needsUpdate = true;
+
+				console.log('🧯 灭火器状态更新:', {
+					playerId: playerId,
+					extinguisherState: extinguisherState,
+				});
+				break;
+
 			case 'interact':
 				// 处理工作台交互 - 修复数组结构处理
 				if (actionData.targetType === 'station') {
