@@ -2735,15 +2735,40 @@ export default class GameScene extends Phaser.Scene {
 					station.setData('overtimeBar', null);
 				}
 
-				// 确保烹饪台纹理正确（防止显示为绿色方块）
-				if (stationType === 'cooking') {
+				// 检查烹饪台是否还在着火
+				const isOnFire = station.getData('isOnFire');
+
+				// 只有在没有着火的情况下才恢复烹饪台纹理
+				if (stationType === 'cooking' && !isOnFire) {
 					station.setTexture('cooking_station');
 				}
 
-				this.showMessage(
-					`取回了 ${this.getItemDisplayName(this.playerHolding.type)}`,
-					0x2ed573
-				);
+				// 特殊处理烤糊食物的提示信息
+				if (
+					processedItem.type === 'burnt_tomato' ||
+					processedItem.type === 'burnt_lettuce'
+				) {
+					if (isOnFire) {
+						this.showMessage(
+							`取回了 ${this.getItemDisplayName(
+								this.playerHolding.type
+							)}，请用灭火器灭火后烹饪台可恢复使用！`,
+							0xffa502
+						);
+					} else {
+						this.showMessage(
+							`取回了 ${this.getItemDisplayName(
+								this.playerHolding.type
+							)}，烹饪台已恢复可用！`,
+							0x2ed573
+						);
+					}
+				} else {
+					this.showMessage(
+						`取回了 ${this.getItemDisplayName(this.playerHolding.type)}`,
+						0x2ed573
+					);
+				}
 
 				// 多人游戏：同步工作台状态和手持物品状态
 				if (this.gameMode === 'multiplayer') {
@@ -2770,6 +2795,16 @@ export default class GameScene extends Phaser.Scene {
 				} else {
 					this.showMessage('烹饪台着火了！需要灭火器灭火！', 0xff6b6b);
 				}
+				return;
+			}
+
+			// 检查是否有烤糊食物（即使没有着火，有烤糊食物也不能使用）
+			if (
+				processedItem &&
+				(processedItem.type === 'burnt_tomato' ||
+					processedItem.type === 'burnt_lettuce')
+			) {
+				this.showMessage('烹饪台有烤糊食物，请先用空格键拾取！', 0xff6b6b);
 				return;
 			}
 
@@ -3013,24 +3048,44 @@ export default class GameScene extends Phaser.Scene {
 
 				// 检查是否是烤糊的食物
 				if (itemType === 'burnt_tomato' || itemType === 'burnt_lettuce') {
-					this.showMessage('烤糊的食物已丢弃', 0x2ed573);
+					this.showMessage('烤糊的食物已丢弃！', 0x2ed573);
 					this.createTrashEffect(trash.x, trash.y);
+
+					// 清空手持物品
+					this.playerHolding = null;
+
+					// 多人游戏：立即同步手持物品状态
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlayerPosition(); // 这会同时同步位置和手持物品
+					}
+
+					// 发送游戏状态更新事件
+					this.emitGameStateUpdate();
+
+					console.log('🗑️ 烤糊食物已丢弃:', {
+						itemType: itemType,
+						playerHolding: this.playerHolding,
+					});
 				} else if (this.playerHolding.type === 'prepared_plate') {
 					this.showMessage('丢弃了装好的盘子', 0xff6b6b);
 					this.createTrashEffect(trash.x, trash.y);
+
+					// 清空手持物品
+					this.playerHolding = null;
+
+					// 多人游戏：立即同步手持物品状态
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlayerPosition();
+					}
+
+					// 发送游戏状态更新事件
+					this.emitGameStateUpdate();
 				} else {
+					// 其他物品不能丢弃到垃圾桶
 					this.showMessage(
-						`丢弃了 ${this.getItemDisplayName(itemType)}`,
+						`${this.getItemDisplayName(itemType)} 不能丢弃到垃圾桶`,
 						0xff6b6b
 					);
-					this.createTrashEffect(trash.x, trash.y);
-				}
-
-				this.playerHolding = null;
-
-				// 多人游戏：立即同步手持物品状态
-				if (this.gameMode === 'multiplayer') {
-					this.syncPlayerPosition(); // 这会同时同步位置和手持物品
 				}
 			} else {
 				this.showMessage('没有物品可以丢弃', 0xa4b0be);
@@ -3782,7 +3837,21 @@ export default class GameScene extends Phaser.Scene {
 	extinguishFire(station) {
 		// 灭火过程
 		station.setData('isOnFire', false);
-		station.setTexture('cooking_station'); // 恢复正常纹理
+
+		// 检查是否有烤糊食物
+		const processedItem = station.getData('processedItem');
+		const hasBurntFood =
+			processedItem &&
+			(processedItem.type === 'burnt_tomato' ||
+				processedItem.type === 'burnt_lettuce');
+
+		// 只有在没有烤糊食物时才恢复正常纹理
+		if (!hasBurntFood) {
+			station.setTexture('cooking_station'); // 恢复正常纹理
+		} else {
+			// 有烤糊食物时保持着火纹理，但设置为不着火状态
+			station.setTexture('fire_cooking_station');
+		}
 
 		// 灭火器不消耗，玩家继续持有
 		// this.playerHolding = null; // 移除这行，让玩家继续持有灭火器
@@ -3795,13 +3864,11 @@ export default class GameScene extends Phaser.Scene {
 		// 创建灭火效果
 		this.createExtinguishEffect(station.x, station.y);
 
-		this.showMessage('火已扑灭！灭火器可以继续使用', 0x2ed573);
-
-		// 移除自动重新生成灭火器的逻辑
-		// this.time.delayedCall(5000, () => {
-		// 	this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
-		// 	this.showMessage('新的灭火器已准备就绪', 0xa4b0be);
-		// });
+		if (hasBurntFood) {
+			this.showMessage('火已扑灭！请拾取烤糊食物恢复烹饪台', 0xffa502);
+		} else {
+			this.showMessage('火已扑灭！烹饪台已恢复可用', 0x2ed573);
+		}
 
 		// 发送游戏状态更新事件
 		this.emitGameStateUpdate();
@@ -4153,7 +4220,9 @@ export default class GameScene extends Phaser.Scene {
 				// 清除着火倒计时状态
 				station.setData('fireCountdown', false);
 				station.setData('fireCountdownStartTime', null);
-				// 开始着火
+
+				// 同时产生烤糊食物和着火
+				this.burnFood(station, 'cooking');
 				this.startFire(station, 'cooking');
 			},
 		});
@@ -4245,24 +4314,46 @@ export default class GameScene extends Phaser.Scene {
 		// 创建烤糊效果
 		this.createBurntEffect(station.x, station.y);
 
-		this.showMessage('食物烤糊了！需要丢到垃圾桶', 0xff6b6b);
+		this.showMessage('食物烤糊了！请拾取烤糊食物恢复烹饪台', 0xff6b6b);
 	}
 
 	startFire(station, stationType) {
 		station.setData('isOnFire', true);
 		station.setTexture('fire_cooking_station'); // 修复：使用正确的纹理名称
 
-		// 更新工作台内容 - 清空内容（着火时食物被烧毁）
-		station.setData('contents', []);
-		station.setData('isProcessing', false);
-		station.setData('processedItem', null);
+		// 检查是否有烤糊食物，如果有则保留
+		const processedItem = station.getData('processedItem');
+		const hasBurntFood =
+			processedItem &&
+			(processedItem.type === 'burnt_tomato' ||
+				processedItem.type === 'burnt_lettuce');
 
-		console.log('🔥 工作台着火，工作台状态:', {
-			stationType,
-			isOnFire: true,
-			contents: [],
-			isProcessing: false,
-		});
+		if (hasBurntFood) {
+			// 有烤糊食物时，只清理正在处理的状态，保留烤糊食物
+			station.setData('isProcessing', false);
+			// 保留 processedItem（烤糊食物）
+			// 保留 contents（包含烤糊食物）
+
+			console.log('🔥 工作台着火，保留烤糊食物:', {
+				stationType,
+				isOnFire: true,
+				processedItem: processedItem,
+				contents: station.getData('contents'),
+				isProcessing: false,
+			});
+		} else {
+			// 没有烤糊食物时，清空所有内容
+			station.setData('contents', []);
+			station.setData('isProcessing', false);
+			station.setData('processedItem', null);
+
+			console.log('🔥 工作台着火，清空内容:', {
+				stationType,
+				isOnFire: true,
+				contents: [],
+				isProcessing: false,
+			});
+		}
 
 		// 多人游戏：同步工作台状态
 		if (this.gameMode === 'multiplayer') {
@@ -4275,7 +4366,11 @@ export default class GameScene extends Phaser.Scene {
 		// 创建着火效果
 		this.createFireEffect(station.x, station.y);
 
-		this.showMessage('烹饪台着火了！快用灭火器灭火！', 0xff6b6b);
+		if (hasBurntFood) {
+			this.showMessage('烹饪台着火了！请用灭火器灭火！', 0xff6b6b);
+		} else {
+			this.showMessage('烹饪台着火了！快用灭火器灭火！', 0xff6b6b);
+		}
 
 		// 清除所有计时器
 		const completionTimer = station.getData('completionTimer');
