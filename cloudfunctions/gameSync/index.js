@@ -98,25 +98,51 @@ async function syncPlayerAction(event) {
 				const currentPlates =
 					(room.data.gameState && room.data.gameState.plates) || [];
 
-				// 通过位置查找对应的盘子
-				const plateIndex = currentPlates.findIndex(function (plate) {
-					const distance = Math.sqrt(
-						Math.pow(plate.x - actionData.position.x, 2) +
-							Math.pow(plate.y - actionData.position.y, 2)
-					);
-					return distance < 10; // 允许10像素的误差
-				});
+				// 优先通过plateId查找，如果没有则通过位置查找
+				let plateIndex = -1;
+				if (actionData.plateId) {
+					plateIndex = currentPlates.findIndex(function (plate) {
+						return plate.id === actionData.plateId;
+					});
+				}
+
+				// 如果通过ID没找到，尝试通过位置查找
+				if (plateIndex === -1) {
+					plateIndex = currentPlates.findIndex(function (plate) {
+						const distance = Math.sqrt(
+							Math.pow(plate.x - actionData.position.x, 2) +
+								Math.pow(plate.y - actionData.position.y, 2)
+						);
+						return distance < 10; // 允许10像素的误差
+					});
+				}
 
 				if (plateIndex !== -1) {
 					// 更新找到的盘子
 					const updatedPlates = currentPlates.map(function (plate, index) {
 						if (index === plateIndex) {
-							return Object.assign({}, plate, {
+							const updatedPlate = Object.assign({}, plate, {
 								contents: actionData.contents,
 								plateType: actionData.plateType,
 								updatedBy: playerId,
 								updatedAt: new Date(),
 							});
+
+							// 更新位置（如果提供）
+							if (actionData.position) {
+								updatedPlate.x = actionData.position.x;
+								updatedPlate.y = actionData.position.y;
+							}
+
+							// 更新可见性和活跃状态（如果提供）
+							if (actionData.visible !== undefined) {
+								updatedPlate.visible = actionData.visible;
+							}
+							if (actionData.active !== undefined) {
+								updatedPlate.active = actionData.active;
+							}
+
+							return updatedPlate;
 						}
 						return plate;
 					});
@@ -132,9 +158,28 @@ async function syncPlayerAction(event) {
 						playerId: playerId,
 					});
 				} else {
-					console.warn('未找到对应的盘子:', {
-						targetPosition: actionData.position,
-						availablePlates: currentPlates.map((p) => ({ x: p.x, y: p.y })),
+					// 如果没有找到现有的盘子，创建一个新的盘子记录
+					const newPlate = {
+						id: actionData.plateId,
+						x: actionData.position.x,
+						y: actionData.position.y,
+						contents: actionData.contents,
+						plateType: actionData.plateType,
+						visible:
+							actionData.visible !== undefined ? actionData.visible : true,
+						active: actionData.active !== undefined ? actionData.active : true,
+						updatedBy: playerId,
+						updatedAt: new Date(),
+					};
+
+					const updatedPlates = currentPlates.concat([newPlate]);
+					updateData['gameState.plates'] = updatedPlates;
+					needsUpdate = true;
+
+					console.log('创建新盘子记录:', {
+						plateId: actionData.plateId,
+						plateData: newPlate,
+						playerId: playerId,
 					});
 				}
 				break;

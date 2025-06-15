@@ -466,7 +466,14 @@ class MultiplayerManager {
 	}
 
 	// 同步盘子状态
-	async syncPlateState(plateId, contents, plateType, position) {
+	async syncPlateState(
+		plateId,
+		contents,
+		plateType,
+		position,
+		visible,
+		active
+	) {
 		try {
 			if (!this.roomId) return Promise.resolve();
 
@@ -482,6 +489,8 @@ class MultiplayerManager {
 						contents,
 						plateType,
 						position,
+						visible,
+						active,
 					},
 				},
 			});
