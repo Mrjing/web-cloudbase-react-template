@@ -1,0 +1,10 @@
+{
+    "servers": {
+        "cloudbase": {
+            "command": "npx",
+            "args": [
+                "@cloudbase/cloudbase-mcp@latest"
+            ]
+        }
+    }
+}

@@ -1,0 +1,42 @@
+{
+	"envId": "luke-agent-dev-7g1nc8tqc2ab76af",
+	"version": "2.0",
+	"$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+	"framework": {
+		"name": "react",
+		"plugins": {
+			"client": {
+				"use": "@cloudbase/framework-plugin-website",
+				"inputs": {
+					"buildCommand": "npm run build",
+					"outputPath": "dist",
+					"cloudPath": "/overcooked-game"
+				}
+			}
+		}
+	},
+	"functions": [
+		{
+			"name": "gameSync",
+			"timeout": 60,
+			"envVariables": {},
+			"runtime": "Nodejs18.15",
+			"memorySize": 256,
+			"handler": "index.main"
+		}
+	],
+	"databases": [
+		{
+			"collectionName": "game_rooms",
+			"description": "游戏房间信息存储"
+		},
+		{
+			"collectionName": "game_scores",
+			"description": "玩家分数排行榜"
+		},
+		{
+			"collectionName": "game_players",
+			"description": "玩家信息存储"
+		}
+	]
+}
