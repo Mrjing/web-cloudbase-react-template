@@ -212,6 +212,11 @@ async function syncPlayerAction(event) {
 								isOnFire: actionData.isOnFire || false,
 								contents: actionData.contents || [],
 								currentUser: actionData.isProcessing ? playerId : null,
+								// 确保保留position字段，如果没有则使用actionData中的position
+								position: station.position || actionData.position,
+								x: station.x || actionData.position.x,
+								y: station.y || actionData.position.y,
+								stationType: station.stationType || actionData.stationType,
 								updatedBy: playerId,
 								updatedAt: new Date(),
 							});
@@ -230,13 +235,31 @@ async function syncPlayerAction(event) {
 						playerId: playerId,
 					});
 				} else {
-					console.warn('未找到对应的工作台:', {
-						targetPosition: actionData.position,
-						availableStations: currentStations.map((s) => ({
-							id: s.id,
-							x: s.x,
-							y: s.y,
-						})),
+					// 如果没有找到现有的工作台，创建一个新的工作台记录
+					const newStation = {
+						id: actionData.stationId,
+						x: actionData.position.x,
+						y: actionData.position.y,
+						position: actionData.position,
+						stationType: actionData.stationType,
+						isProcessing: actionData.isProcessing || false,
+						processedItem: actionData.processedItem || null,
+						processingItem: actionData.processingItem || null,
+						isOnFire: actionData.isOnFire || false,
+						contents: actionData.contents || [],
+						currentUser: actionData.isProcessing ? playerId : null,
+						updatedBy: playerId,
+						updatedAt: new Date(),
+					};
+
+					const updatedStations = currentStations.concat([newStation]);
+					updateData['gameState.stations'] = updatedStations;
+					needsUpdate = true;
+
+					console.log('创建新工作台记录:', {
+						stationId: actionData.stationId,
+						stationData: newStation,
+						playerId: playerId,
 					});
 				}
 				break;

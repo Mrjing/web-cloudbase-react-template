@@ -1204,191 +1204,103 @@ export default class GameScene extends Phaser.Scene {
 
 	// 从服务器更新工作台状态
 	updateStationsFromServer(serverStations) {
-		console.log('🔧 开始更新工作台状态，服务器数据:', serverStations);
-
-		// 检查stations组是否存在
-		if (
-			!this.stations ||
-			!this.stations.children ||
-			!this.stations.children.entries
-		) {
-			console.warn('⚠️ 工作台组不存在，跳过工作台状态更新');
+		// 安全检查：确保stations对象已经初始化
+		if (!this.stations || !this.stations.children) {
+			console.warn('⚠️ stations对象未初始化，跳过更新:', {
+				stationsExists: !!this.stations,
+				childrenExists: this.stations ? !!this.stations.children : false,
+			});
 			return;
 		}
 
-		// 检查serverStations是数组还是对象
-		if (Array.isArray(serverStations)) {
-			// 处理数组结构
-			serverStations.forEach((serverStationData) => {
-				console.log('🔧 处理工作台（数组）:', { serverStationData });
+		Object.keys(serverStations).forEach((stationId) => {
+			const serverStationData = serverStations[stationId];
+			console.log('🔧 处理工作台（对象）:', { stationId, serverStationData });
 
-				// 通过ID或位置查找对应的本地工作台
-				let localStation = null;
+			// 通过位置查找对应的本地工作台
+			const localStation = this.findStationByPosition(
+				serverStationData.position
+			);
+			if (localStation) {
+				console.log('🔧 找到本地工作台，更新状态:', {
+					stationId,
+					localPosition: { x: localStation.x, y: localStation.y },
+					serverData: serverStationData,
+				});
 
-				// 首先尝试通过ID查找
-				if (serverStationData.id) {
-					localStation = this.stations.children.entries.find(
-						(station) =>
-							station.getData('type') === serverStationData.id ||
-							station.getData('id') === serverStationData.id
-					);
-				}
-
-				// 如果通过ID没找到，尝试通过位置查找
-				if (
-					!localStation &&
-					serverStationData.x !== undefined &&
-					serverStationData.y !== undefined
-				) {
-					localStation = this.findStationByPosition({
-						x: serverStationData.x,
-						y: serverStationData.y,
-					});
-				}
-
-				if (localStation) {
-					console.log('🔧 找到本地工作台，更新状态:', {
-						stationId: serverStationData.id,
-						localPosition: { x: localStation.x, y: localStation.y },
-						serverData: serverStationData,
-						currentLocalData: {
-							isProcessing: localStation.getData('isProcessing'),
-							processedItem: localStation.getData('processedItem'),
-							processingItem: localStation.getData('processingItem'),
-							contents: localStation.getData('contents'),
-						},
-					});
-
-					// 更新工作台状态
-					localStation.setData(
-						'isProcessing',
-						serverStationData.isProcessing || false
-					);
-					localStation.setData(
-						'processedItem',
-						serverStationData.processedItem || null
-					);
-					localStation.setData(
-						'processingItem',
-						serverStationData.processingItem || null
-					);
-					localStation.setData('isOnFire', serverStationData.isOnFire || false);
-					localStation.setData('contents', serverStationData.contents || []);
-					localStation.setData(
-						'currentUser',
-						serverStationData.currentUser || null
-					);
-
-					// 如果工作台着火，更新纹理
-					if (
-						serverStationData.isOnFire &&
-						serverStationData.type === 'cooking'
-					) {
-						localStation.setTexture('fire_cooking_station');
-					} else if (serverStationData.type === 'cooking') {
-						localStation.setTexture('cooking_station');
-					}
-
-					console.log('✅ 工作台状态更新完成:', {
-						stationId: serverStationData.id,
-						updatedLocalData: {
-							isProcessing: localStation.getData('isProcessing'),
-							processedItem: localStation.getData('processedItem'),
-							processingItem: localStation.getData('processingItem'),
-							contents: localStation.getData('contents'),
-							currentUser: localStation.getData('currentUser'),
-						},
-					});
-				} else {
-					console.warn('⚠️ 未找到对应的本地工作台:', {
-						serverStationData,
-						availableStations: this.stations.children.entries.map((s) => ({
-							x: s.x,
-							y: s.y,
-							type: s.getData('type'),
-							id: s.getData('id'),
-						})),
-					});
-				}
-			});
-		} else {
-			// 处理对象结构（保持向后兼容）
-			Object.keys(serverStations).forEach((stationId) => {
-				const serverStationData = serverStations[stationId];
-				console.log('🔧 处理工作台（对象）:', { stationId, serverStationData });
-
-				// 通过位置查找对应的本地工作台
-				const localStation = this.findStationByPosition(
-					serverStationData.position
+				// 更新工作台状态
+				localStation.setData(
+					'isProcessing',
+					serverStationData.isProcessing || false
 				);
-				if (localStation) {
-					console.log('🔧 找到本地工作台，更新状态:', {
-						stationId,
-						localPosition: { x: localStation.x, y: localStation.y },
-						serverData: serverStationData,
-					});
+				localStation.setData(
+					'processedItem',
+					serverStationData.processedItem || null
+				);
+				localStation.setData(
+					'processingItem',
+					serverStationData.processingItem || null
+				);
+				localStation.setData('isOnFire', serverStationData.isOnFire || false);
+				localStation.setData('contents', serverStationData.contents || []);
+				localStation.setData(
+					'currentUser',
+					serverStationData.currentUser || null
+				);
 
-					// 更新工作台状态
-					localStation.setData(
-						'isProcessing',
-						serverStationData.isProcessing || false
-					);
-					localStation.setData(
-						'processedItem',
-						serverStationData.processedItem || null
-					);
-					localStation.setData(
-						'processingItem',
-						serverStationData.processingItem || null
-					);
-					localStation.setData('isOnFire', serverStationData.isOnFire || false);
-					localStation.setData('contents', serverStationData.contents || []);
-					localStation.setData(
-						'currentUser',
-						serverStationData.currentUser || null
-					);
-
-					// 如果工作台着火，更新纹理
-					if (
-						serverStationData.isOnFire &&
-						serverStationData.stationType === 'cooking'
-					) {
-						localStation.setTexture('fire_cooking_station');
-					} else if (serverStationData.stationType === 'cooking') {
-						localStation.setTexture('cooking_station');
-					}
-
-					// 更新ID映射
-					this.stationIdMap.set(localStation, stationId);
-
-					console.log('✅ 工作台状态更新完成:', {
-						stationId,
-						updatedLocalData: {
-							isProcessing: localStation.getData('isProcessing'),
-							processedItem: localStation.getData('processedItem'),
-							processingItem: localStation.getData('processingItem'),
-							contents: localStation.getData('contents'),
-							currentUser: localStation.getData('currentUser'),
-						},
-					});
-				} else {
-					console.warn('⚠️ 未找到对应的本地工作台:', {
-						stationId,
-						serverPosition: serverStationData.position,
-						availableStations: this.stations.children.entries.map((s) => ({
-							x: s.x,
-							y: s.y,
-							type: s.getData('type'),
-						})),
-					});
+				// 如果工作台着火，更新纹理
+				if (
+					serverStationData.isOnFire &&
+					serverStationData.stationType === 'cooking'
+				) {
+					localStation.setTexture('fire_cooking_station');
+				} else if (serverStationData.stationType === 'cooking') {
+					localStation.setTexture('cooking_station');
 				}
-			});
-		}
+
+				// 更新ID映射
+				this.stationIdMap.set(localStation, stationId);
+
+				console.log('✅ 工作台状态更新完成:', {
+					stationId,
+					updatedLocalData: {
+						isProcessing: localStation.getData('isProcessing'),
+						processedItem: localStation.getData('processedItem'),
+						processingItem: localStation.getData('processingItem'),
+						contents: localStation.getData('contents'),
+						currentUser: localStation.getData('currentUser'),
+					},
+				});
+			} else {
+				console.warn('⚠️ 未找到对应的本地工作台:', {
+					stationId,
+					serverPosition: serverStationData.position,
+					availableStations: this.stations.children.entries.map((s) => ({
+						x: s.x,
+						y: s.y,
+						type: s.getData('type'),
+					})),
+				});
+			}
+		});
 	}
 
 	// 从服务器更新盘子状态
 	updatePlatesFromServer(serverPlates) {
 		console.log('🍽️ 开始更新盘子状态，服务器数据:', serverPlates);
+
+		// 安全检查：确保plates对象已经初始化
+		if (!this.plates || !this.plates.children) {
+			console.warn('⚠️ plates对象未初始化，跳过更新:', {
+				platesExists: !!this.plates,
+				childrenExists: this.plates ? !!this.plates.children : false,
+				serverPlatesType: typeof serverPlates,
+				serverPlatesLength: Array.isArray(serverPlates)
+					? serverPlates.length
+					: Object.keys(serverPlates || {}).length,
+			});
+			return;
+		}
 
 		// 检查serverPlates是数组还是对象
 		if (Array.isArray(serverPlates)) {
@@ -1529,6 +1441,15 @@ export default class GameScene extends Phaser.Scene {
 
 	// 从服务器更新洗碗槽状态
 	updateWashStationsFromServer(serverWashStations) {
+		// 安全检查：确保washStation对象已经初始化
+		if (!this.washStation || !this.washStation.children) {
+			console.warn('⚠️ washStation对象未初始化，跳过更新:', {
+				washStationExists: !!this.washStation,
+				childrenExists: this.washStation ? !!this.washStation.children : false,
+			});
+			return;
+		}
+
 		if (!serverWashStations) {
 			console.warn('⚠️ 服务器洗碗槽数据为空，跳过更新');
 			return;
@@ -1598,8 +1519,22 @@ export default class GameScene extends Phaser.Scene {
 		});
 	}
 
-	// 从服务器更新地面物品
+	// 从服务器更新地面物品状态
 	updateGroundItemsFromServer(serverGroundItems) {
+		// 安全检查：确保groundItems对象已经初始化
+		if (!this.groundItems || !this.groundItems.children) {
+			console.warn('⚠️ groundItems对象未初始化，跳过更新:', {
+				groundItemsExists: !!this.groundItems,
+				childrenExists: this.groundItems ? !!this.groundItems.children : false,
+			});
+			return;
+		}
+
+		if (!serverGroundItems) {
+			console.warn('⚠️ 服务器地面物品数据为空，跳过更新');
+			return;
+		}
+
 		// 清除所有现有的地面物品
 		this.groundItems.children.entries.forEach((item) => {
 			this.groundItemIdMap.delete(item);
@@ -1626,6 +1561,16 @@ export default class GameScene extends Phaser.Scene {
 
 	// 通过位置查找工作台
 	findStationByPosition(position) {
+		// 参数验证
+		if (
+			!position ||
+			typeof position.x !== 'number' ||
+			typeof position.y !== 'number'
+		) {
+			console.warn('⚠️ findStationByPosition: 无效的position参数:', position);
+			return null;
+		}
+
 		return this.stations.children.entries.find((station) => {
 			const distance = Phaser.Math.Distance.Between(
 				station.x,
@@ -1639,6 +1584,16 @@ export default class GameScene extends Phaser.Scene {
 
 	// 通过位置查找盘子
 	findPlateByPosition(position) {
+		// 参数验证
+		if (
+			!position ||
+			typeof position.x !== 'number' ||
+			typeof position.y !== 'number'
+		) {
+			console.warn('⚠️ findPlateByPosition: 无效的position参数:', position);
+			return null;
+		}
+
 		return this.plates.children.entries.find((plate) => {
 			const distance = Phaser.Math.Distance.Between(
 				plate.x,
@@ -1652,6 +1607,19 @@ export default class GameScene extends Phaser.Scene {
 
 	// 通过位置查找洗碗槽
 	findWashStationByPosition(position) {
+		// 参数验证
+		if (
+			!position ||
+			typeof position.x !== 'number' ||
+			typeof position.y !== 'number'
+		) {
+			console.warn(
+				'⚠️ findWashStationByPosition: 无效的position参数:',
+				position
+			);
+			return null;
+		}
+
 		return this.washStation.children.entries.find((washStation) => {
 			const distance = Phaser.Math.Distance.Between(
 				washStation.x,
@@ -1917,9 +1885,14 @@ export default class GameScene extends Phaser.Scene {
 		this.trash = this.physics.add.staticGroup();
 		this.trash.create(700, 500, 'trash').setSize(32, 32);
 
-		// 创建灭火器
+		// 创建灭火器 - 全局只有一个
 		this.extinguisher = this.physics.add.staticGroup();
 		this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
+
+		console.log('🧯 创建灭火器:', {
+			position: { x: 650, y: 350 },
+			count: 1,
+		});
 	}
 
 	createIngredients() {
@@ -2494,7 +2467,10 @@ export default class GameScene extends Phaser.Scene {
 
 		// 检查灭火器
 		this.extinguisher.children.entries.forEach((extinguisher) => {
+			// 只检测可见且活跃的灭火器
 			if (
+				extinguisher.active &&
+				extinguisher.visible &&
 				Phaser.Math.Distance.Between(
 					playerX,
 					playerY,
@@ -3023,8 +2999,22 @@ export default class GameScene extends Phaser.Scene {
 		if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
 			if (!this.playerHolding) {
 				// 拾取灭火器
-				this.playerHolding = { type: 'extinguisher' };
-				extinguisher.destroy();
+				this.playerHolding = {
+					type: 'extinguisher',
+					extinguisherObject: extinguisher, // 保存灭火器对象引用
+				};
+
+				// 只隐藏灭火器，不设置setActive(false)，这样碰撞检测仍然有效
+				extinguisher.setVisible(false);
+				// extinguisher.setActive(false); // 移除这行，保持碰撞检测
+
+				console.log('🧯 拾取灭火器:', {
+					position: { x: extinguisher.x, y: extinguisher.y },
+					visible: false,
+					active: true, // 保持活跃状态
+					playerHolding: this.playerHolding,
+				});
+
 				this.showMessage('拾取了灭火器，去灭火吧！', 0x2ed573);
 
 				// 多人游戏：同步手持物品状态
@@ -3049,10 +3039,48 @@ export default class GameScene extends Phaser.Scene {
 
 			// 检查放置位置是否合适
 			if (this.isValidPlacementPosition(playerX, playerY)) {
-				let groundItem;
-				if (this.playerHolding.type === 'prepared_plate') {
+				if (this.playerHolding.type === 'extinguisher') {
+					// 放下灭火器 - 恢复灭火器对象的可见性和位置
+					const extinguisherObj = this.playerHolding.extinguisherObject;
+					if (extinguisherObj) {
+						extinguisherObj.setPosition(playerX, playerY);
+						extinguisherObj.setVisible(true);
+						// 确保灭火器是活跃的（虽然拾取时没有设置为false，但为了保险起见）
+						extinguisherObj.setActive(true);
+
+						// 强制更新物理体位置（确保碰撞检测正确）
+						if (extinguisherObj.body) {
+							extinguisherObj.body.updateFromGameObject();
+						}
+
+						console.log('🧯 放下灭火器:', {
+							position: { x: playerX, y: playerY },
+							visible: true,
+							active: true,
+							hasBody: !!extinguisherObj.body,
+							bodyPosition: extinguisherObj.body
+								? { x: extinguisherObj.body.x, y: extinguisherObj.body.y }
+								: null,
+						});
+
+						this.showMessage('放下了灭火器', 0x2ed573);
+					} else {
+						// 如果没有保存的对象引用，创建新的灭火器（向后兼容）
+						const newExtinguisher = this.extinguisher
+							.create(playerX, playerY, 'extinguisher')
+							.setSize(32, 32);
+
+						console.log('🧯 创建新灭火器（向后兼容）:', {
+							position: { x: playerX, y: playerY },
+							visible: true,
+							active: true,
+						});
+
+						this.showMessage('放下了灭火器', 0x2ed573);
+					}
+				} else if (this.playerHolding.type === 'prepared_plate') {
 					// 装好的盘子特殊处理
-					groundItem = this.groundItems.create(
+					let groundItem = this.groundItems.create(
 						playerX,
 						playerY,
 						'prepared_plate'
@@ -3067,7 +3095,7 @@ export default class GameScene extends Phaser.Scene {
 					this.showMessage(`放下了装有 ${contentsDisplay} 的盘子`, 0x2ed573);
 				} else {
 					// 普通物品
-					groundItem = this.groundItems.create(
+					let groundItem = this.groundItems.create(
 						playerX,
 						playerY,
 						this.playerHolding.type
@@ -3084,11 +3112,11 @@ export default class GameScene extends Phaser.Scene {
 						`放下了 ${this.getItemDisplayName(this.playerHolding.type)}`,
 						0x2ed573
 					);
-				}
 
-				// 多人游戏：同步地面物品添加
-				if (this.gameMode === 'multiplayer') {
-					this.syncGroundItemAdd(groundItem);
+					// 多人游戏：同步地面物品添加（灭火器不需要同步地面物品）
+					if (this.gameMode === 'multiplayer') {
+						this.syncGroundItemAdd(groundItem);
+					}
 				}
 
 				// 清空玩家手持
@@ -3205,9 +3233,19 @@ export default class GameScene extends Phaser.Scene {
 			...this.washStation.children.entries,
 			...this.trash.children.entries,
 			...this.groundItems.children.entries,
+			...this.extinguisher.children.entries, // 添加灭火器对象
 		];
 
 		for (const obj of allObjects) {
+			// 如果是灭火器且当前正在放下灭火器，跳过距离检查
+			if (
+				this.playerHolding &&
+				this.playerHolding.type === 'extinguisher' &&
+				this.extinguisher.children.entries.includes(obj)
+			) {
+				continue;
+			}
+
 			if (Phaser.Math.Distance.Between(x, y, obj.x, obj.y) < minDistance) {
 				return false;
 			}
@@ -3546,20 +3584,28 @@ export default class GameScene extends Phaser.Scene {
 			const plateId = washingPlate.getData('plateId');
 			const originalPosition = washingPlate.getData('originalPosition');
 
+			// 计算洗碗槽附近的位置（洗碗槽右侧）
+			const cleanPlatePosition = {
+				x: washStation.x + 50, // 洗碗槽右侧50像素
+				y: washStation.y,
+			};
+
 			console.log('🚿 洗碗完成，创建新的干净盘子:', {
 				plateId,
 				originalPosition,
+				cleanPlatePosition,
 				dirtyPlatePosition: { x: washingPlate.x, y: washingPlate.y },
 			});
 
 			// 创建新的干净盘子对象
 			const cleanPlate = this.plates.create(
-				originalPosition.x,
-				originalPosition.y,
+				cleanPlatePosition.x,
+				cleanPlatePosition.y,
 				'plate'
 			);
 			cleanPlate.setData('plateType', 'clean');
 			cleanPlate.setData('contents', []);
+
 			cleanPlate.setData('plateId', plateId); // 保持相同的ID
 			cleanPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
 			cleanPlate.setSize(28, 28);
@@ -3588,7 +3634,7 @@ export default class GameScene extends Phaser.Scene {
 
 			console.log('🚿 洗碗完成，新盘子状态:', {
 				plateId,
-				newPosition: originalPosition,
+				newPosition: cleanPlatePosition,
 				plateType: 'clean',
 				texture: 'plate',
 			});
@@ -3600,7 +3646,7 @@ export default class GameScene extends Phaser.Scene {
 				});
 			}
 
-			this.showMessage('盘子清洗完成！已放回原位', 0xffd700);
+			this.showMessage('盘子清洗完成！已放在洗碗槽旁边', 0xffd700);
 		} else {
 			this.showMessage('盘子清洗完成！按空格键取回', 0xffd700);
 		}
@@ -3619,25 +3665,24 @@ export default class GameScene extends Phaser.Scene {
 		station.setData('isOnFire', false);
 		station.setTexture('cooking_station'); // 恢复正常纹理
 
-		// 消耗灭火器
-		this.playerHolding = null;
+		// 灭火器不消耗，玩家继续持有
+		// this.playerHolding = null; // 移除这行，让玩家继续持有灭火器
 
-		// 多人游戏：同步工作台状态和手持物品
+		// 多人游戏：同步工作台状态（不需要同步手持物品，因为没有变化）
 		if (this.gameMode === 'multiplayer') {
 			this.syncStationState(station);
-			this.syncPlayerPosition();
 		}
 
 		// 创建灭火效果
 		this.createExtinguishEffect(station.x, station.y);
 
-		this.showMessage('火已扑灭！烹饪台可以继续使用', 0x2ed573);
+		this.showMessage('火已扑灭！灭火器可以继续使用', 0x2ed573);
 
-		// 重新生成灭火器
-		this.time.delayedCall(5000, () => {
-			this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
-			this.showMessage('新的灭火器已准备就绪', 0xa4b0be);
-		});
+		// 移除自动重新生成灭火器的逻辑
+		// this.time.delayedCall(5000, () => {
+		// 	this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
+		// 	this.showMessage('新的灭火器已准备就绪', 0xa4b0be);
+		// });
 
 		// 发送游戏状态更新事件
 		this.emitGameStateUpdate();
