@@ -105,105 +105,252 @@ export default class GameScene extends Phaser.Scene {
 		// 盘子管理系统 - 新增
 		this.platePool = []; // 盘子池，固定4个盘子
 		this.maxPlates = 4; // 最大盘子数量
+
+		// 瓦片地板
+		this.floorTiles = null;
+		// 墙壁
+		this.walls = null;
 	}
 
 	preload() {
-		// 创建高质量像素风格图形
+		// 添加资源加载监听器用于调试
+		this.load.on('filecomplete', (key, type, data) => {
+			console.log('✅ 资源加载完成:', { key, type, success: !!data });
+		});
+
+		this.load.on('loaderror', (file) => {
+			console.error('❌ 资源加载失败:', file.key, file.src);
+		});
+
+		// 加载瓦片贴图资源
+		this.load.image(
+			'floors',
+			'src/assets/tiled/Floors_original_shading_TILESET_A5_.png'
+		);
+		this.load.image('walls', 'src/assets/tiled/Walls_2_TILESET_A4_.png');
+		this.load.image('kitchen_01', 'src/assets/tiled/B-C-D-E_Kitchen_01.png');
+		this.load.image('kitchen_02', 'src/assets/tiled/B-C-D-E_Kitchen_02.png');
+		this.load.image('kitchen_12', 'src/assets/tiled/12_Kitchen.png');
+
+		// 加载角色精灵表
+		this.load.spritesheet('edward', 'src/assets/character/Edward.png', {
+			frameWidth: 32,
+			frameHeight: 32,
+		});
+		this.load.spritesheet('abby', 'src/assets/character/Abby.png', {
+			frameWidth: 32,
+			frameHeight: 32,
+		});
+
+		// 创建像素艺术风格的游戏对象
 		this.createPixelArt();
+
+		// 加载用户切好的厨房设备图片
+		this.load.image('cutting_station_new', 'src/assets/tiled/切菜台.png');
+		this.load.image('cooking_station_new', 'src/assets/tiled/烹饪台.png');
+		this.load.image('wash_station_new', 'src/assets/tiled/洗手池.png');
+		this.load.image('serving_station_new', 'src/assets/tiled/餐桌.png');
+		this.load.image('plate_new', 'src/assets/tiled/盘子.png');
+		console.log('📦 加载用户切好的厨房设备图片...');
 	}
 
 	createPixelArt() {
-		// 创建厨房地板纹理
-		const floorGraphics = this.add.graphics();
-		floorGraphics.fillStyle(0xf4e4bc); // 木质地板色
-		floorGraphics.fillRect(0, 0, 64, 64);
+		// 设置像素完美渲染
+		this.cameras.main.setRoundPixels(true);
 
-		// 添加地板纹理细节
-		floorGraphics.fillStyle(0xe6d3a3);
-		for (let i = 0; i < 64; i += 8) {
-			floorGraphics.fillRect(i, 0, 2, 64);
-			floorGraphics.fillRect(0, i, 64, 2);
-		}
-		floorGraphics.generateTexture('floor_tile', 64, 64);
-		floorGraphics.destroy();
-
-		// 创建墙壁纹理
-		const wallGraphics = this.add.graphics();
-		wallGraphics.fillStyle(0x8b7355); // 棕色墙壁
-		wallGraphics.fillRect(0, 0, 64, 64);
-		wallGraphics.fillStyle(0xa0845c);
-		wallGraphics.fillRect(4, 4, 56, 56);
-		wallGraphics.generateTexture('wall_tile', 64, 64);
-		wallGraphics.destroy();
-
-		// 创建精细的男性厨师角色
-		const chefMaleGraphics = this.add.graphics();
-		// 身体 (白色厨师服)
-		chefMaleGraphics.fillStyle(0xffffff);
-		chefMaleGraphics.fillRect(8, 12, 16, 20);
-		// 头部 (肤色)
-		chefMaleGraphics.fillStyle(0xfdbcb4);
-		chefMaleGraphics.fillRect(10, 4, 12, 12);
-		// 厨师帽
-		chefMaleGraphics.fillStyle(0xffffff);
-		chefMaleGraphics.fillRect(8, 0, 16, 8);
-		chefMaleGraphics.fillRect(12, 0, 8, 4);
-		// 眼睛
-		chefMaleGraphics.fillStyle(0x000000);
-		chefMaleGraphics.fillRect(12, 8, 2, 2);
-		chefMaleGraphics.fillRect(18, 8, 2, 2);
-		// 围裙
-		chefMaleGraphics.fillStyle(0xe8e8e8);
-		chefMaleGraphics.fillRect(10, 16, 12, 12);
-		// 手臂
-		chefMaleGraphics.fillStyle(0xfdbcb4);
-		chefMaleGraphics.fillRect(4, 14, 6, 8);
-		chefMaleGraphics.fillRect(22, 14, 6, 8);
-		// 腿部
-		chefMaleGraphics.fillStyle(0x4a4a4a);
-		chefMaleGraphics.fillRect(10, 28, 5, 8);
-		chefMaleGraphics.fillRect(17, 28, 5, 8);
-		chefMaleGraphics.generateTexture('chef_male', 32, 36);
-		chefMaleGraphics.destroy();
-
-		// 创建精细的女性厨师角色
-		const chefFemaleGraphics = this.add.graphics();
-		// 身体 (白色厨师服)
-		chefFemaleGraphics.fillStyle(0xffffff);
-		chefFemaleGraphics.fillRect(8, 12, 16, 20);
-		// 头部 (肤色)
-		chefFemaleGraphics.fillStyle(0xfdbcb4);
-		chefFemaleGraphics.fillRect(10, 4, 12, 12);
-		// 长发
-		chefFemaleGraphics.fillStyle(0x8b4513);
-		chefFemaleGraphics.fillRect(8, 4, 16, 14);
-		chefFemaleGraphics.fillRect(6, 6, 20, 10);
-		// 厨师帽
-		chefFemaleGraphics.fillStyle(0xffffff);
-		chefFemaleGraphics.fillRect(8, 0, 16, 8);
-		chefFemaleGraphics.fillRect(12, 0, 8, 4);
-		// 眼睛
-		chefFemaleGraphics.fillStyle(0x000000);
-		chefFemaleGraphics.fillRect(12, 8, 2, 2);
-		chefFemaleGraphics.fillRect(18, 8, 2, 2);
-		// 围裙 (粉色)
-		chefFemaleGraphics.fillStyle(0xffb6c1);
-		chefFemaleGraphics.fillRect(10, 16, 12, 12);
-		// 手臂
-		chefFemaleGraphics.fillStyle(0xfdbcb4);
-		chefFemaleGraphics.fillRect(4, 14, 6, 8);
-		chefFemaleGraphics.fillRect(22, 14, 6, 8);
-		// 腿部
-		chefFemaleGraphics.fillStyle(0x4a4a4a);
-		chefFemaleGraphics.fillRect(10, 28, 5, 8);
-		chefFemaleGraphics.fillRect(17, 28, 5, 8);
-		chefFemaleGraphics.generateTexture('chef_female', 32, 36);
-		chefFemaleGraphics.destroy();
-
-		// 创建精美的食材
+		// 创建基础纹理
 		this.createIngredientSprites();
-		this.createStationSprites();
+		this.createStationSprites(); // 重新添加工作台纹理创建
 		this.createUISprites();
+	}
+
+	createTileTextures() {
+		console.log('🎨 开始创建瓦片纹理...');
+
+		// 检查资源是否已加载
+		const floorsTexture = this.textures.get('floors');
+		const wallsTexture = this.textures.get('walls');
+		console.log('📦 检查资源加载状态:', {
+			floors: floorsTexture.key !== '__MISSING',
+			walls: wallsTexture.key !== '__MISSING',
+			kitchen_01: this.textures.get('kitchen_01').key !== '__MISSING',
+			kitchen_02: this.textures.get('kitchen_02').key !== '__MISSING',
+			kitchen_12: this.textures.get('kitchen_12').key !== '__MISSING',
+		});
+
+		// 从地板贴图中切出不同的地板纹理 (32x32像素)
+		const floorTileSize = 32;
+
+		// 创建厨房地板纹理 - 选择浅色木地板 (第1个瓦片)
+		const kitchenFloorRT = this.add.renderTexture(
+			0,
+			0,
+			floorTileSize,
+			floorTileSize
+		);
+		// 使用正确的draw语法：draw(key, frame, x, y, alpha, tint)
+		kitchenFloorRT.drawFrame('floors', null, 0, 0);
+		kitchenFloorRT.saveTexture('kitchen_floor');
+		kitchenFloorRT.setVisible(false);
+		console.log('🏠 创建厨房地板纹理:', kitchenFloorRT);
+
+		// 创建走廊地板纹理 - 选择石砖地板 (第3个瓦片)
+		const corridorFloorRT = this.add.renderTexture(
+			0,
+			0,
+			floorTileSize,
+			floorTileSize
+		);
+		// 先创建一个临时sprite来获取正确的帧
+		const tempFloorSprite = this.add.sprite(0, 0, 'floors');
+		tempFloorSprite.setCrop(floorTileSize * 2, 0, floorTileSize, floorTileSize);
+		corridorFloorRT.draw(tempFloorSprite, 0, 0);
+		tempFloorSprite.destroy();
+		corridorFloorRT.saveTexture('corridor_floor');
+		corridorFloorRT.setVisible(false);
+		console.log('🚪 创建走廊地板纹理:', corridorFloorRT);
+
+		// 从墙壁贴图中切出墙壁纹理 (32x32像素)
+		const wallTileSize = 32;
+
+		// 创建厨房墙壁纹理 (第1个瓦片)
+		const kitchenWallRT = this.add.renderTexture(
+			0,
+			0,
+			wallTileSize,
+			wallTileSize
+		);
+		kitchenWallRT.drawFrame('walls', null, 0, 0);
+		kitchenWallRT.saveTexture('kitchen_wall');
+		kitchenWallRT.setVisible(false);
+		console.log('🧱 创建厨房墙壁纹理:', kitchenWallRT);
+
+		// 创建装饰墙壁纹理 (第2个瓦片)
+		const decorWallRT = this.add.renderTexture(
+			0,
+			0,
+			wallTileSize,
+			wallTileSize
+		);
+		const tempWallSprite = this.add.sprite(0, 0, 'walls');
+		tempWallSprite.setCrop(wallTileSize, 0, wallTileSize, wallTileSize);
+		decorWallRT.draw(tempWallSprite, 0, 0);
+		tempWallSprite.destroy();
+		decorWallRT.saveTexture('decorative_wall');
+		decorWallRT.setVisible(false);
+		console.log('🎨 创建装饰墙壁纹理:', decorWallRT);
+
+		// 从厨房素材中切出设备纹理
+		this.createKitchenEquipmentTextures();
+
+		console.log('✅ 瓦片纹理创建完成');
+
+		// 验证纹理是否真的创建成功
+		this.time.delayedCall(100, () => {
+			console.log('🔍 验证纹理存在性:', {
+				kitchen_floor: this.textures.exists('kitchen_floor'),
+				corridor_floor: this.textures.exists('corridor_floor'),
+				kitchen_wall: this.textures.exists('kitchen_wall'),
+				decorative_wall: this.textures.exists('decorative_wall'),
+				new_cutting_station: this.textures.exists('new_cutting_station'),
+				new_cooking_station: this.textures.exists('new_cooking_station'),
+				new_wash_station: this.textures.exists('new_wash_station'),
+				new_serving_station: this.textures.exists('new_serving_station'),
+				new_trash: this.textures.exists('new_trash'),
+				new_extinguisher: this.textures.exists('new_extinguisher'),
+			});
+		});
+	}
+
+	createKitchenEquipmentTextures() {
+		// 直接使用用户切好的厨房设备图片
+		console.log('🔧 使用用户切好的厨房设备图片...');
+
+		// 检查用户切好的图片是否存在
+		console.log('📦 检查用户切好的图片:', {
+			cutting_station_new: this.textures.exists('cutting_station_new'),
+			cooking_station_new: this.textures.exists('cooking_station_new'),
+			wash_station_new: this.textures.exists('wash_station_new'),
+			serving_station_new: this.textures.exists('serving_station_new'),
+			plate_new: this.textures.exists('plate_new'),
+		});
+
+		// 直接复制用户切好的图片作为新纹理
+		try {
+			if (this.textures.exists('cutting_station_new')) {
+				const sourceTexture = this.textures.get('cutting_station_new');
+				this.textures.addImage(
+					'new_cutting_station',
+					sourceTexture.source[0].image
+				);
+				console.log('🔪 使用用户切好的切菜台图片');
+			}
+
+			if (this.textures.exists('cooking_station_new')) {
+				const sourceTexture = this.textures.get('cooking_station_new');
+				this.textures.addImage(
+					'new_cooking_station',
+					sourceTexture.source[0].image
+				);
+				console.log('🔥 使用用户切好的烹饪台图片');
+			}
+
+			if (this.textures.exists('wash_station_new')) {
+				const sourceTexture = this.textures.get('wash_station_new');
+				this.textures.addImage(
+					'new_wash_station',
+					sourceTexture.source[0].image
+				);
+				console.log('🚿 使用用户切好的洗手池图片');
+			}
+
+			if (this.textures.exists('serving_station_new')) {
+				const sourceTexture = this.textures.get('serving_station_new');
+				this.textures.addImage(
+					'new_serving_station',
+					sourceTexture.source[0].image
+				);
+				console.log('🍽️ 使用用户切好的餐桌图片');
+			}
+
+			if (this.textures.exists('plate_new')) {
+				const sourceTexture = this.textures.get('plate_new');
+				this.textures.addImage('new_plate', sourceTexture.source[0].image);
+				console.log('🍽️ 使用用户切好的盘子图片');
+			}
+
+			// 垃圾桶和灭火器仍然使用kitchen_12（如果存在）
+			if (this.textures.exists('kitchen_12')) {
+				// 垃圾桶 - 从kitchen_12左上角切割（x=0, y=0, 32x32）
+				const trashRT = this.add.renderTexture(0, 0, 32, 32);
+				trashRT.draw('kitchen_12', 0, 0);
+				trashRT.saveTexture('new_trash');
+				trashRT.setVisible(false);
+				console.log('🗑️ 创建垃圾桶纹理成功 - 从kitchen_12切割');
+
+				// 灭火器 - 从kitchen_12切割（x=32, y=0, 32x32）
+				const extinguisherRT = this.add.renderTexture(0, 0, 32, 32);
+				extinguisherRT.draw('kitchen_12', -32, 0);
+				extinguisherRT.saveTexture('new_extinguisher');
+				extinguisherRT.setVisible(false);
+				console.log('🧯 创建灭火器纹理成功 - 从kitchen_12切割');
+			}
+		} catch (error) {
+			console.error('❌ 使用厨房设备图片失败:', error);
+		}
+
+		console.log('✅ 厨房设备纹理创建完成');
+
+		// 验证纹理是否真的创建成功
+		console.log('🔍 验证新纹理存在性:', {
+			new_cutting_station: this.textures.exists('new_cutting_station'),
+			new_cooking_station: this.textures.exists('new_cooking_station'),
+			new_serving_station: this.textures.exists('new_serving_station'),
+			new_wash_station: this.textures.exists('new_wash_station'),
+			new_trash: this.textures.exists('new_trash'),
+			new_extinguisher: this.textures.exists('new_extinguisher'),
+			new_plate: this.textures.exists('new_plate'),
+		});
 	}
 
 	createIngredientSprites() {
@@ -392,227 +539,35 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	createStationSprites() {
-		// 切菜台
-		const cuttingStationGraphics = this.add.graphics();
-		cuttingStationGraphics.fillStyle(0x8b4513); // 木质台面
-		cuttingStationGraphics.fillRect(0, 16, 64, 48);
-		cuttingStationGraphics.fillStyle(0xd2b48c); // 台面
-		cuttingStationGraphics.fillRect(4, 20, 56, 40);
-		// 切菜板
-		cuttingStationGraphics.fillStyle(0xf5deb3);
-		cuttingStationGraphics.fillRect(12, 28, 40, 24);
-		// 刀具
-		cuttingStationGraphics.fillStyle(0xc0c0c0);
-		cuttingStationGraphics.fillRect(20, 24, 2, 8);
-		cuttingStationGraphics.fillStyle(0x8b4513);
-		cuttingStationGraphics.fillRect(19, 20, 4, 6);
-		cuttingStationGraphics.generateTexture('cutting_station', 64, 64);
-		cuttingStationGraphics.destroy();
+		// 创建基础工作台纹理作为回退
+		const stationGraphics = this.add.graphics();
 
-		// 烹饪台
-		const cookingStationGraphics = this.add.graphics();
-		cookingStationGraphics.fillStyle(0x2c2c2c); // 炉灶
-		cookingStationGraphics.fillRect(0, 16, 64, 48);
-		cookingStationGraphics.fillStyle(0x404040);
-		cookingStationGraphics.fillRect(4, 20, 56, 40);
-		// 炉火
-		cookingStationGraphics.fillStyle(0xff6b6b);
-		cookingStationGraphics.fillCircle(20, 40, 8);
-		cookingStationGraphics.fillCircle(44, 40, 8);
-		cookingStationGraphics.fillStyle(0xffa502);
-		cookingStationGraphics.fillCircle(20, 40, 5);
-		cookingStationGraphics.fillCircle(44, 40, 5);
-		// 平底锅
-		cookingStationGraphics.fillStyle(0x2c2c2c);
-		cookingStationGraphics.fillCircle(32, 35, 12);
-		cookingStationGraphics.fillStyle(0x1a1a1a);
-		cookingStationGraphics.fillCircle(32, 35, 10);
-		cookingStationGraphics.generateTexture('cooking_station', 64, 64);
-		cookingStationGraphics.destroy();
+		// 切菜台 - 绿色
+		stationGraphics.fillStyle(0x2d5016);
+		stationGraphics.fillRect(0, 0, 64, 32);
+		stationGraphics.fillStyle(0x3d6b1f);
+		stationGraphics.fillRect(2, 2, 60, 28);
+		stationGraphics.generateTexture('cutting_station', 64, 32);
 
-		// 出餐口 - 重新设计
-		const servingStationGraphics = this.add.graphics();
-		// 不锈钢台面
-		servingStationGraphics.fillStyle(0xe5e5e5); // 浅灰色不锈钢
-		servingStationGraphics.fillRect(0, 16, 64, 48);
-		servingStationGraphics.fillStyle(0xf8f8f8); // 亮面
-		servingStationGraphics.fillRect(4, 20, 56, 40);
+		// 烹饪台 - 红色
+		stationGraphics.clear();
+		stationGraphics.fillStyle(0x7f1d1d);
+		stationGraphics.fillRect(0, 0, 64, 32);
+		stationGraphics.fillStyle(0x991b1b);
+		stationGraphics.fillRect(2, 2, 60, 28);
+		stationGraphics.generateTexture('cooking_station', 64, 32);
 
-		// 出餐窗口边框
-		servingStationGraphics.fillStyle(0xc0c0c0);
-		servingStationGraphics.fillRect(8, 24, 48, 32);
-		servingStationGraphics.fillStyle(0xf0f0f0);
-		servingStationGraphics.fillRect(10, 26, 44, 28);
+		// 出餐台 - 蓝色
+		stationGraphics.clear();
+		stationGraphics.fillStyle(0x1e3a8a);
+		stationGraphics.fillRect(0, 0, 64, 32);
+		stationGraphics.fillStyle(0x2563eb);
+		stationGraphics.fillRect(2, 2, 60, 28);
+		stationGraphics.generateTexture('serving_station', 64, 32);
 
-		// 出餐标识
-		servingStationGraphics.fillStyle(0x2ed573); // 绿色标识
-		servingStationGraphics.fillRect(28, 30, 8, 4);
-		servingStationGraphics.fillRect(30, 28, 4, 8);
+		stationGraphics.destroy();
 
-		// 出餐灯
-		servingStationGraphics.fillStyle(0xffd700); // 金色出餐灯
-		servingStationGraphics.fillCircle(32, 20, 3);
-		servingStationGraphics.fillStyle(0xffed4e);
-		servingStationGraphics.fillCircle(32, 20, 2);
-
-		servingStationGraphics.generateTexture('serving_station', 64, 64);
-		servingStationGraphics.destroy();
-
-		// 洗碗槽
-		const washStationGraphics = this.add.graphics();
-		// 不锈钢水槽
-		washStationGraphics.fillStyle(0xd1d5db); // 银色
-		washStationGraphics.fillRect(0, 16, 64, 48);
-		washStationGraphics.fillStyle(0xe5e7eb); // 亮面
-		washStationGraphics.fillRect(4, 20, 56, 40);
-
-		// 水槽内部
-		washStationGraphics.fillStyle(0x9ca3af);
-		washStationGraphics.fillRect(8, 24, 48, 32);
-		washStationGraphics.fillStyle(0xb8c5d1);
-		washStationGraphics.fillRect(10, 26, 44, 28);
-
-		// 水龙头
-		washStationGraphics.fillStyle(0x6b7280);
-		washStationGraphics.fillRect(30, 16, 4, 8);
-		washStationGraphics.fillCircle(32, 16, 3);
-
-		// 水滴效果
-		washStationGraphics.fillStyle(0x3b82f6);
-		washStationGraphics.fillCircle(30, 30, 1);
-		washStationGraphics.fillCircle(34, 32, 1);
-		washStationGraphics.fillCircle(32, 35, 1);
-
-		washStationGraphics.generateTexture('wash_station', 64, 64);
-		washStationGraphics.destroy();
-
-		// 精美的盘子
-		const plateGraphics = this.add.graphics();
-		plateGraphics.fillStyle(0xffffff);
-		plateGraphics.fillCircle(16, 16, 14);
-		plateGraphics.lineStyle(2, 0xe0e0e0);
-		plateGraphics.strokeCircle(16, 16, 14);
-		plateGraphics.strokeCircle(16, 16, 10);
-		// 盘子光泽
-		plateGraphics.fillStyle(0xf8f8f8);
-		plateGraphics.fillCircle(12, 12, 3);
-		plateGraphics.generateTexture('plate', 32, 32);
-		plateGraphics.destroy();
-
-		// 装好的盘子（有食材的盘子）
-		const preparedPlateGraphics = this.add.graphics();
-		// 盘子底部
-		preparedPlateGraphics.fillStyle(0xffffff);
-		preparedPlateGraphics.fillCircle(16, 16, 14);
-		preparedPlateGraphics.lineStyle(2, 0xe0e0e0);
-		preparedPlateGraphics.strokeCircle(16, 16, 14);
-		preparedPlateGraphics.strokeCircle(16, 16, 10);
-
-		// 食材堆叠效果（模拟多种食材）
-		preparedPlateGraphics.fillStyle(0x22c55e); // 绿色（生菜）
-		preparedPlateGraphics.fillCircle(12, 14, 4);
-		preparedPlateGraphics.fillStyle(0xe53e3e); // 红色（番茄）
-		preparedPlateGraphics.fillCircle(20, 14, 4);
-		preparedPlateGraphics.fillStyle(0xd97706); // 金黄色（面包）
-		preparedPlateGraphics.fillRect(14, 18, 4, 2);
-
-		// 盘子光泽
-		preparedPlateGraphics.fillStyle(0xf8f8f8);
-		preparedPlateGraphics.fillCircle(12, 12, 2);
-		preparedPlateGraphics.generateTexture('prepared_plate', 32, 32);
-		preparedPlateGraphics.destroy();
-
-		// 脏盘子
-		const dirtyPlateGraphics = this.add.graphics();
-		dirtyPlateGraphics.fillStyle(0xf3f4f6); // 稍微暗一些的白色
-		dirtyPlateGraphics.fillCircle(16, 16, 14);
-		dirtyPlateGraphics.lineStyle(2, 0xd1d5db);
-		dirtyPlateGraphics.strokeCircle(16, 16, 14);
-		dirtyPlateGraphics.strokeCircle(16, 16, 10);
-		// 污渍
-		dirtyPlateGraphics.fillStyle(0x9ca3af);
-		dirtyPlateGraphics.fillCircle(12, 14, 2);
-		dirtyPlateGraphics.fillCircle(20, 18, 1);
-		dirtyPlateGraphics.fillCircle(18, 12, 1);
-		// 食物残渣
-		dirtyPlateGraphics.fillStyle(0x78716c);
-		dirtyPlateGraphics.fillCircle(14, 20, 1);
-		dirtyPlateGraphics.fillCircle(22, 14, 1);
-		dirtyPlateGraphics.generateTexture('dirty_plate', 32, 32);
-		dirtyPlateGraphics.destroy();
-
-		// 垃圾桶
-		const trashGraphics = this.add.graphics();
-		trashGraphics.fillStyle(0x666666);
-		trashGraphics.fillRect(4, 8, 24, 24);
-		trashGraphics.fillStyle(0x333333);
-		trashGraphics.fillRect(2, 4, 28, 8);
-		// 垃圾桶标识
-		trashGraphics.fillStyle(0xffffff);
-		trashGraphics.fillRect(14, 16, 4, 8);
-		trashGraphics.fillRect(12, 18, 8, 4);
-		trashGraphics.generateTexture('trash', 32, 32);
-		trashGraphics.destroy();
-
-		// 灭火器
-		const extinguisherGraphics = this.add.graphics();
-		// 灭火器主体（红色圆柱）
-		extinguisherGraphics.fillStyle(0xdc2626); // 红色
-		extinguisherGraphics.fillRect(12, 8, 8, 20);
-		// 灭火器顶部
-		extinguisherGraphics.fillStyle(0x374151); // 深灰色
-		extinguisherGraphics.fillRect(10, 6, 12, 4);
-		// 压力表
-		extinguisherGraphics.fillStyle(0xfbbf24); // 金色
-		extinguisherGraphics.fillCircle(16, 12, 2);
-		// 喷嘴
-		extinguisherGraphics.fillStyle(0x6b7280); // 灰色
-		extinguisherGraphics.fillRect(18, 10, 4, 2);
-		// 标签
-		extinguisherGraphics.fillStyle(0xffffff);
-		extinguisherGraphics.fillRect(13, 16, 6, 8);
-		extinguisherGraphics.fillStyle(0x000000);
-		extinguisherGraphics.fillRect(14, 18, 4, 2);
-		extinguisherGraphics.generateTexture('extinguisher', 32, 32);
-		extinguisherGraphics.destroy();
-
-		// 着火的烹饪台
-		const fireCookingStationGraphics = this.add.graphics();
-		// 炉灶基础
-		fireCookingStationGraphics.fillStyle(0x2c2c2c);
-		fireCookingStationGraphics.fillRect(0, 16, 64, 48);
-		fireCookingStationGraphics.fillStyle(0x404040);
-		fireCookingStationGraphics.fillRect(4, 20, 56, 40);
-
-		// 大火焰效果
-		fireCookingStationGraphics.fillStyle(0xff4444); // 红色火焰
-		fireCookingStationGraphics.fillCircle(20, 35, 12);
-		fireCookingStationGraphics.fillCircle(44, 35, 12);
-		fireCookingStationGraphics.fillStyle(0xff6b6b);
-		fireCookingStationGraphics.fillCircle(20, 30, 8);
-		fireCookingStationGraphics.fillCircle(44, 30, 8);
-		fireCookingStationGraphics.fillStyle(0xffa502); // 橙色火焰
-		fireCookingStationGraphics.fillCircle(20, 25, 6);
-		fireCookingStationGraphics.fillCircle(44, 25, 6);
-		fireCookingStationGraphics.fillStyle(0xffed4e); // 黄色火焰中心
-		fireCookingStationGraphics.fillCircle(20, 22, 4);
-		fireCookingStationGraphics.fillCircle(44, 22, 4);
-
-		// 烟雾效果
-		fireCookingStationGraphics.fillStyle(0x666666);
-		fireCookingStationGraphics.fillCircle(15, 15, 3);
-		fireCookingStationGraphics.fillCircle(25, 12, 2);
-		fireCookingStationGraphics.fillCircle(35, 14, 3);
-		fireCookingStationGraphics.fillCircle(45, 11, 2);
-
-		// 平底锅（烧焦状态）
-		fireCookingStationGraphics.fillStyle(0x1a1a1a); // 黑色
-		fireCookingStationGraphics.fillCircle(32, 40, 12);
-		fireCookingStationGraphics.fillStyle(0x0f0f0f);
-		fireCookingStationGraphics.fillCircle(32, 40, 10);
-
-		fireCookingStationGraphics.generateTexture('fire_cooking_station', 64, 64);
-		fireCookingStationGraphics.destroy();
+		console.log('✅ 基础工作台纹理创建完成');
 	}
 
 	createUISprites() {
@@ -634,65 +589,158 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	create() {
-		// 重置游戏状态
-		this.gameStarted = false;
-		this.gameEnded = false;
-		this.score = 0;
-		this.timeLeft = 180;
-		this.completedOrders = 0;
-		this.playerHolding = null;
-		this.currentOrder = null;
+		// 创建瓦片纹理（必须在资源加载完成后）
+		this.createTileTextures();
 
-		// 清理之前的计时器
-		if (this.gameTimer) {
-			this.gameTimer.remove();
-			this.gameTimer = null;
-		}
-		if (this.orderTimer) {
-			this.orderTimer.remove();
-			this.orderTimer = null;
-		}
-
-		// 检查游戏模式
-		this.gameMode = this.gameMode || 'single';
-
-		// 创建厨房背景
+		// 创建厨房布局
 		this.createKitchenLayout();
 
-		// 初始化多人游戏
-		if (this.gameMode === 'multiplayer') {
-			this.initMultiplayerGame();
-		} else {
-			this.initSinglePlayerGame();
-		}
+		// 创建角色动画
+		this.createCharacterAnimations();
 
-		// 创建输入控制
+		// 设置控制
 		this.setupControls();
 
 		// 创建游戏对象
 		this.createGameObjects();
 
-		// 创建UI
-		this.createUI();
-
 		// 设置碰撞检测
 		this.setupCollisions();
 
-		// 添加粒子效果系统
+		// 设置粒子效果
 		this.setupParticleEffects();
 
-		// 启动游戏
+		// 创建UI
+		this.createUI();
+
+		// 开始游戏
 		this.startGame();
+	}
+
+	createCharacterAnimations() {
+		// 创建Edward角色动画 (男性)
+		this.anims.create({
+			key: 'edward_idle_down',
+			frames: [{ key: 'edward', frame: 0 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_down',
+			frames: this.anims.generateFrameNumbers('edward', { start: 0, end: 2 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_up',
+			frames: [{ key: 'edward', frame: 9 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_up',
+			frames: this.anims.generateFrameNumbers('edward', { start: 9, end: 11 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_left',
+			frames: [{ key: 'edward', frame: 3 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_left',
+			frames: this.anims.generateFrameNumbers('edward', { start: 3, end: 5 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_right',
+			frames: [{ key: 'edward', frame: 6 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_right',
+			frames: this.anims.generateFrameNumbers('edward', { start: 6, end: 8 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		// 创建Abby角色动画 (女性)
+		this.anims.create({
+			key: 'abby_idle_down',
+			frames: [{ key: 'abby', frame: 0 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_down',
+			frames: this.anims.generateFrameNumbers('abby', { start: 0, end: 2 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_up',
+			frames: [{ key: 'abby', frame: 9 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_up',
+			frames: this.anims.generateFrameNumbers('abby', { start: 9, end: 11 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_left',
+			frames: [{ key: 'abby', frame: 3 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_left',
+			frames: this.anims.generateFrameNumbers('abby', { start: 3, end: 5 }),
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_right',
+			frames: [{ key: 'abby', frame: 6 }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_right',
+			frames: this.anims.generateFrameNumbers('abby', { start: 6, end: 8 }),
+			frameRate: 8,
+			repeat: -1,
+		});
 	}
 
 	initSinglePlayerGame() {
 		// 创建单人玩家（男性厨师）
-		this.player = this.physics.add.sprite(100, 300, 'chef_male');
+		this.player = this.physics.add.sprite(100, 300, 'edward');
 		this.player.setCollideWorldBounds(true);
 		this.player.setDepth(10);
 		this.player.setSize(24, 32);
 		this.player.setData('playerId', 'single_player');
 		this.player.setData('playerType', 'male');
+
+		// 设置玩家动画
+		this.player.direction = 'down';
+		this.player.characterType = 'edward';
+		this.player.anims.play('edward_idle_down');
+
+		// 玩家创建后立即设置碰撞检测
+		this.setupPlayerCollisions();
 	}
 
 	initMultiplayerGame() {
@@ -713,7 +761,7 @@ export default class GameScene extends Phaser.Scene {
 			roomData.players.forEach((playerData, index) => {
 				const isCurrentPlayer = playerData.playerId === this.currentPlayerId;
 				const playerType = index === 0 ? 'male' : 'female'; // 第一个玩家是男性，第二个是女性
-				const texture = playerType === 'male' ? 'chef_male' : 'chef_female';
+				const texture = playerType === 'male' ? 'edward' : 'abby';
 
 				// 设置初始位置（如果没有位置信息）
 				const startX = playerData.position?.x || 100 + index * 100;
@@ -782,7 +830,7 @@ export default class GameScene extends Phaser.Scene {
 			console.warn('⚠️ 当前玩家未在房间数据中找到，创建默认玩家');
 
 			// 创建默认的当前玩家
-			this.player = this.physics.add.sprite(100, 300, 'chef_male');
+			this.player = this.physics.add.sprite(100, 300, 'edward');
 			this.player.setCollideWorldBounds(true);
 			this.player.setDepth(10);
 			this.player.setSize(24, 32);
@@ -1093,40 +1141,33 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	createOtherPlayer(playerData, playerIndex) {
-		// 确定玩家类型（基于房间中的顺序）
-		const roomData = multiplayerManager.getRoomData();
-		const actualIndex = roomData.players.findIndex(
-			(p) => p.playerId === playerData.playerId
+		// 为不同玩家分配不同角色
+		const characterTypes = ['edward', 'abby'];
+		const characterType = characterTypes[playerIndex % characterTypes.length];
+
+		const otherPlayer = this.physics.add.sprite(
+			playerData.x || 150,
+			playerData.y || 300,
+			characterType
 		);
-		const playerType = actualIndex === 0 ? 'male' : 'female';
-		const texture = playerType === 'male' ? 'chef_male' : 'chef_female';
 
-		const startX = playerData.position?.x || 100 + actualIndex * 100;
-		const startY = playerData.position?.y || 300;
-
-		console.log('👤 创建其他玩家:', {
-			playerId: playerData.playerId,
-			nickname: playerData.nickname,
-			playerType,
-			texture,
-			position: { x: startX, y: startY },
-			holding: playerData.holding, // 添加手持物品信息
-			actualIndex,
-		});
-
-		// 创建其他玩家精灵
-		const otherPlayer = this.physics.add.sprite(startX, startY, texture);
 		otherPlayer.setCollideWorldBounds(true);
+		otherPlayer.setSize(24, 24);
+		otherPlayer.setOffset(4, 8);
 		otherPlayer.setDepth(10);
-		otherPlayer.setSize(24, 32);
-		otherPlayer.setData('playerId', playerData.playerId);
-		otherPlayer.setData('playerType', playerType);
+		otherPlayer.setTint(0xaaaaff); // 稍微不同的颜色区分其他玩家
+		otherPlayer.playerId = playerData.playerId;
+		otherPlayer.characterType = characterType;
+		otherPlayer.direction = playerData.direction || 'down';
 
-		// 添加玩家名称标签
+		// 播放初始动画
+		otherPlayer.anims.play(`${characterType}_idle_${otherPlayer.direction}`);
+
+		// 创建玩家名称标签
 		const nameText = this.add.text(
-			startX,
-			startY - 40,
-			playerData.nickname || `玩家${actualIndex + 1}`,
+			otherPlayer.x,
+			otherPlayer.y - 40,
+			`玩家${playerIndex + 2}`,
 			{
 				fontSize: '12px',
 				fill: '#ffffff',
@@ -1135,29 +1176,30 @@ export default class GameScene extends Phaser.Scene {
 			}
 		);
 		nameText.setOrigin(0.5);
-		nameText.setDepth(11);
+		nameText.setDepth(15);
+		otherPlayer.nameText = nameText;
 
-		const otherPlayerObj = {
-			sprite: otherPlayer,
-			nameText: nameText,
-			data: playerData,
-			holdingSprite: null, // 初始化手持物品精灵
-		};
+		// 创建手持物品精灵
+		const holdingSprite = this.add.sprite(
+			otherPlayer.x,
+			otherPlayer.y,
+			'tomato'
+		);
+		holdingSprite.setVisible(false);
+		holdingSprite.setDepth(12);
+		holdingSprite.setScale(0.6);
+		otherPlayer.holdingSprite = holdingSprite;
 
-		this.otherPlayers.set(playerData.playerId, otherPlayerObj);
+		this.otherPlayers.push(otherPlayer);
 
-		// 如果玩家有手持物品，立即显示
-		if (playerData.holding) {
-			this.updateOtherPlayerHolding(otherPlayerObj, playerData.holding);
-		}
-
-		console.log('✅ 其他玩家创建完成:', {
+		console.log(`👥 创建其他玩家 ${playerIndex + 2}:`, {
 			playerId: playerData.playerId,
-			nickname: playerData.nickname,
-			playerType,
-			position: { x: startX, y: startY },
-			holding: playerData.holding,
+			characterType: characterType,
+			position: { x: playerData.x, y: playerData.y },
+			direction: otherPlayer.direction,
 		});
+
+		return otherPlayer;
 	}
 
 	updateGameStateFromServer(gameState) {
@@ -1896,48 +1938,134 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	startGame() {
-		if (this.gameStarted) return;
-
-		this.gameStarted = true;
+		// 重置游戏状态
+		this.gameStarted = false;
 		this.gameEnded = false;
+		this.score = 0;
+		this.timeLeft = 180;
+		this.completedOrders = 0;
+		this.playerHolding = null;
+		this.currentOrder = null;
 
-		if (this.gameMode === 'multiplayer') {
-			// 多人游戏模式：从服务器获取游戏状态
-			const gameState = multiplayerManager.getGameState();
-			if (gameState) {
-				this.currentOrder = gameState.currentOrder;
-				this.score = gameState.score || 0;
-				this.timeLeft = gameState.timeLeft || 180;
-				this.completedOrders = gameState.completedOrders || 0;
-			}
-		} else {
-			// 单人游戏模式：生成第一个订单
-			this.generateOrder();
+		// 清理之前的计时器
+		if (this.gameTimer) {
+			this.gameTimer.remove();
+			this.gameTimer = null;
+		}
+		if (this.orderTimer) {
+			this.orderTimer.remove();
+			this.orderTimer = null;
 		}
 
-		// 启动计时器
+		// 检查游戏模式
+		this.gameMode = this.gameMode || 'single';
+
+		// 初始化多人游戏
+		if (this.gameMode === 'multiplayer') {
+			this.initMultiplayerGame();
+		} else {
+			this.initSinglePlayerGame();
+		}
+
+		// 生成第一个订单
+		this.generateOrder();
+
+		// 开始计时器
 		this.startTimer();
 
-		this.showMessage('游戏开始！制作美味料理吧！', 0x2ed573);
+		// 开始订单计时器
+		this.startOrderTimer();
+
+		this.gameStarted = true;
 	}
 
 	createKitchenLayout() {
-		// 创建地板
-		for (let x = 0; x < 800; x += 64) {
-			for (let y = 0; y < 600; y += 64) {
-				this.add.image(x + 32, y + 32, 'floor_tile').setDepth(-2);
+		// 设置世界边界
+		this.physics.world.setBounds(0, 0, 1200, 800);
+
+		// 创建瓦片地板
+		const tileSize = 32;
+		const floorWidth = Math.ceil(1200 / tileSize);
+		const floorHeight = Math.ceil(800 / tileSize);
+
+		// 创建地板瓦片组
+		this.floorTiles = this.add.group();
+
+		for (let x = 0; x < floorWidth; x++) {
+			for (let y = 0; y < floorHeight; y++) {
+				// 厨房区域使用厨房地板
+				let floorTexture = 'kitchen_floor';
+
+				// 边缘区域使用走廊地板
+				if (x < 2 || x >= floorWidth - 2 || y < 2 || y >= floorHeight - 2) {
+					floorTexture = 'corridor_floor';
+				}
+
+				const floorTile = this.add.image(
+					x * tileSize + tileSize / 2,
+					y * tileSize + tileSize / 2,
+					floorTexture
+				);
+				floorTile.setDisplaySize(tileSize, tileSize);
+				this.floorTiles.add(floorTile);
 			}
 		}
 
-		// 创建墙壁装饰
-		for (let x = 0; x < 800; x += 64) {
-			this.add.image(x + 32, 32, 'wall_tile').setDepth(-1);
-			this.add.image(x + 32, 568, 'wall_tile').setDepth(-1);
+		// 创建墙壁
+		this.walls = this.physics.add.staticGroup();
+
+		// 顶部墙壁
+		for (let x = 0; x < floorWidth; x++) {
+			const wall = this.add.image(
+				x * tileSize + tileSize / 2,
+				tileSize / 2,
+				'kitchen_wall'
+			);
+			wall.setDisplaySize(tileSize, tileSize);
+			this.walls.add(wall);
 		}
-		for (let y = 64; y < 536; y += 64) {
-			this.add.image(32, y + 32, 'wall_tile').setDepth(-1);
-			this.add.image(768, y + 32, 'wall_tile').setDepth(-1);
+
+		// 底部墙壁
+		for (let x = 0; x < floorWidth; x++) {
+			const wall = this.add.image(
+				x * tileSize + tileSize / 2,
+				(floorHeight - 1) * tileSize + tileSize / 2,
+				'kitchen_wall'
+			);
+			wall.setDisplaySize(tileSize, tileSize);
+			this.walls.add(wall);
 		}
+
+		// 左侧墙壁
+		for (let y = 1; y < floorHeight - 1; y++) {
+			const wall = this.add.image(
+				tileSize / 2,
+				y * tileSize + tileSize / 2,
+				'kitchen_wall'
+			);
+			wall.setDisplaySize(tileSize, tileSize);
+			this.walls.add(wall);
+		}
+
+		// 右侧墙壁
+		for (let y = 1; y < floorHeight - 1; y++) {
+			const wall = this.add.image(
+				(floorWidth - 1) * tileSize + tileSize / 2,
+				y * tileSize + tileSize / 2,
+				'kitchen_wall'
+			);
+			wall.setDisplaySize(tileSize, tileSize);
+			this.walls.add(wall);
+		}
+
+		// 添加一些装饰墙壁
+		const decorativeWall1 = this.add.image(200, 150, 'decorative_wall');
+		decorativeWall1.setDisplaySize(tileSize * 3, tileSize);
+		this.walls.add(decorativeWall1);
+
+		const decorativeWall2 = this.add.image(1000, 150, 'decorative_wall');
+		decorativeWall2.setDisplaySize(tileSize * 3, tileSize);
+		this.walls.add(decorativeWall2);
 	}
 
 	setupControls() {
@@ -1951,44 +2079,53 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	createGameObjects() {
-		// 创建食材组
-		this.ingredients = this.physics.add.staticGroup();
+		// 创建其他玩家数组（多人游戏用）
+		this.otherPlayers = [];
+
+		// 创建食材
 		this.createIngredients();
 
-		// 创建工作台组
-		this.stations = this.physics.add.staticGroup();
+		// 创建工作台
 		this.createStations();
 
-		// 创建盘子组
-		this.plates = this.physics.add.staticGroup();
+		// 创建盘子
 		this.createPlates();
 
+		// 创建垃圾桶 - 使用新纹理
+		this.trash = this.physics.add.staticSprite(700, 500, 'new_trash');
+		this.trash.setSize(30, 30);
+		this.trash.setDepth(5);
+
+		// 创建灭火器 - 使用新纹理
+		this.extinguisher = this.physics.add.sprite(750, 200, 'new_extinguisher');
+		this.extinguisher.setSize(24, 24);
+		this.extinguisher.setDepth(5);
+		this.extinguisher.isHeld = false;
+		this.extinguisher.visible = true;
+		this.extinguisher.active = true;
+
 		// 创建地面物品组
-		this.groundItems = this.physics.add.staticGroup();
+		this.groundItems = this.physics.add.group();
 
-		// 创建洗碗槽
-		this.washStation = this.physics.add.staticGroup();
-		this.washStation
-			.create(200, 420, 'wash_station')
-			.setSize(60, 60)
-			.setData('type', 'wash')
-			.setData('isWashing', false);
-
-		// 创建垃圾桶
-		this.trash = this.physics.add.staticGroup();
-		this.trash.create(700, 500, 'trash').setSize(32, 32);
-
-		// 创建灭火器 - 全局只有一个
-		this.extinguisher = this.physics.add.staticGroup();
-		this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
-
-		console.log('🧯 创建灭火器:', {
-			position: { x: 650, y: 350 },
-			count: 1,
-		});
+		// 创建洗碗站
+		this.washStations = this.physics.add.staticGroup();
+		const washStation = this.physics.add.staticSprite(
+			500,
+			200,
+			'new_wash_station'
+		);
+		washStation.setSize(60, 30);
+		washStation.setDepth(5);
+		washStation.isWashing = false;
+		washStation.washProgress = 0;
+		washStation.dirtyPlate = null;
+		this.washStations.add(washStation);
 	}
 
 	createIngredients() {
+		// 创建食材组
+		this.ingredients = this.physics.add.staticGroup();
+
 		// 食材储存区
 		const ingredientPositions = [
 			{ x: 150, y: 120, type: 'tomato' },
@@ -2015,42 +2152,148 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	createStations() {
-		// 工作台布局 - 调整位置为洗碗槽让路
-		const stationData = [
-			{
-				x: 200,
-				y: 280,
-				type: 'cutting',
-				id: 'cutting',
-				texture: 'cutting_station',
-			},
-			{
-				x: 350,
-				y: 280,
-				type: 'cooking',
-				id: 'cooking',
-				texture: 'cooking_station',
-			},
-			{
-				x: 500,
-				y: 280,
-				type: 'serving',
-				id: 'serving',
-				texture: 'serving_station',
-			}, // 改为出餐口
-		];
+		// 创建工作台组
+		this.stations = this.physics.add.staticGroup();
 
-		stationData.forEach((data) => {
-			const station = this.stations.create(data.x, data.y, data.texture);
-			station.setData('type', data.type);
-			station.setData('id', data.id); // 添加ID数据
-			station.setData('isProcessing', false);
-			station.setData('contents', []);
-			station.setSize(60, 60);
+		console.log('🔧 开始创建工作台...');
+
+		// 检查纹理是否存在，如果不存在则使用回退纹理
+		const cuttingTexture = this.textures.exists('new_cutting_station')
+			? 'new_cutting_station'
+			: 'cutting_station';
+		const cookingTexture = this.textures.exists('new_cooking_station')
+			? 'new_cooking_station'
+			: 'cooking_station';
+		const servingTexture = this.textures.exists('new_serving_station')
+			? 'new_serving_station'
+			: 'serving_station';
+
+		console.log('🔍 纹理检查结果:', {
+			cutting: this.textures.exists('new_cutting_station'),
+			cooking: this.textures.exists('new_cooking_station'),
+			serving: this.textures.exists('new_serving_station'),
+			usingTextures: { cuttingTexture, cookingTexture, servingTexture },
 		});
+
+		// 切菜台 - 使用新纹理或回退纹理
+		const cuttingStation1 = this.physics.add.staticSprite(
+			200,
+			300,
+			cuttingTexture
+		);
+		cuttingStation1.setSize(60, 30);
+		cuttingStation1.setDepth(15); // 增加深度
+		cuttingStation1.setVisible(true); // 确保可见
+		cuttingStation1.stationType = 'cutting';
+		cuttingStation1.contents = [];
+		cuttingStation1.isProcessing = false;
+		this.stations.add(cuttingStation1);
+		console.log('🔪 创建切菜台1:', {
+			x: cuttingStation1.x,
+			y: cuttingStation1.y,
+			texture: cuttingStation1.texture.key,
+			visible: cuttingStation1.visible,
+			depth: cuttingStation1.depth,
+			alpha: cuttingStation1.alpha,
+		});
+
+		const cuttingStation2 = this.physics.add.staticSprite(
+			350,
+			300,
+			cuttingTexture
+		);
+		cuttingStation2.setSize(60, 30);
+		cuttingStation2.setDepth(15); // 增加深度
+		cuttingStation2.setVisible(true); // 确保可见
+		cuttingStation2.stationType = 'cutting';
+		cuttingStation2.contents = [];
+		cuttingStation2.isProcessing = false;
+		this.stations.add(cuttingStation2);
+		console.log('🔪 创建切菜台2:', {
+			x: cuttingStation2.x,
+			y: cuttingStation2.y,
+			texture: cuttingStation2.texture.key,
+			visible: cuttingStation2.visible,
+			depth: cuttingStation2.depth,
+			alpha: cuttingStation2.alpha,
+		});
+
+		// 烹饪台 - 使用新纹理或回退纹理
+		const cookingStation1 = this.physics.add.staticSprite(
+			200,
+			450,
+			cookingTexture
+		);
+		cookingStation1.setSize(60, 30);
+		cookingStation1.setDepth(15); // 增加深度
+		cookingStation1.setVisible(true); // 确保可见
+		cookingStation1.stationType = 'cooking';
+		cookingStation1.contents = [];
+		cookingStation1.isProcessing = false;
+		cookingStation1.isOnFire = false;
+		cookingStation1.fireCountdown = null;
+		this.stations.add(cookingStation1);
+		console.log('🔥 创建烹饪台1:', {
+			x: cookingStation1.x,
+			y: cookingStation1.y,
+			texture: cookingStation1.texture.key,
+			visible: cookingStation1.visible,
+			depth: cookingStation1.depth,
+			alpha: cookingStation1.alpha,
+		});
+
+		const cookingStation2 = this.physics.add.staticSprite(
+			350,
+			450,
+			cookingTexture
+		);
+		cookingStation2.setSize(60, 30);
+		cookingStation2.setDepth(15); // 增加深度
+		cookingStation2.setVisible(true); // 确保可见
+		cookingStation2.stationType = 'cooking';
+		cookingStation2.contents = [];
+		cookingStation2.isProcessing = false;
+		cookingStation2.isOnFire = false;
+		cookingStation2.fireCountdown = null;
+		this.stations.add(cookingStation2);
+		console.log('🔥 创建烹饪台2:', {
+			x: cookingStation2.x,
+			y: cookingStation2.y,
+			texture: cookingStation2.texture.key,
+			visible: cookingStation2.visible,
+			depth: cookingStation2.depth,
+			alpha: cookingStation2.alpha,
+		});
+
+		// 出餐台 - 使用新纹理或回退纹理
+		const servingStation = this.physics.add.staticSprite(
+			600,
+			300,
+			servingTexture
+		);
+		servingStation.setSize(60, 30);
+		servingStation.setDepth(15); // 增加深度
+		servingStation.setVisible(true); // 确保可见
+		servingStation.stationType = 'serving';
+		servingStation.contents = [];
+		servingStation.isProcessing = false;
+		this.stations.add(servingStation);
+		console.log('🍽️ 创建出餐台:', {
+			x: servingStation.x,
+			y: servingStation.y,
+			texture: servingStation.texture.key,
+			visible: servingStation.visible,
+			depth: servingStation.depth,
+			alpha: servingStation.alpha,
+		});
+
+		console.log('✅ 工作台创建完成，总数:', this.stations.children.size);
 	}
 
 	createPlates() {
+		// 创建盘子组
+		this.plates = this.physics.add.staticGroup();
+
 		// 清空盘子池
 		this.platePool = [];
 
@@ -2063,7 +2306,12 @@ export default class GameScene extends Phaser.Scene {
 		];
 
 		platePositions.forEach((pos, index) => {
-			const plate = this.plates.create(pos.x, pos.y, 'plate');
+			// 检查是否有新的盘子纹理，如果有就使用，否则使用原来的
+			const plateTexture = this.textures.exists('new_plate')
+				? 'new_plate'
+				: 'plate';
+
+			const plate = this.plates.create(pos.x, pos.y, plateTexture);
 			plate.setData('contents', []);
 			plate.setData('plateType', 'clean'); // 设置为干净盘子
 			plate.setData('originalPosition', { x: pos.x, y: pos.y }); // 记录原始位置
@@ -2080,6 +2328,7 @@ export default class GameScene extends Phaser.Scene {
 				plateId,
 				position: pos,
 				plateType: 'clean',
+				texture: plateTexture,
 				poolSize: this.platePool.length,
 			});
 
@@ -2099,56 +2348,68 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	setupCollisions() {
-		// 设置重叠检测
-		this.physics.add.overlap(
-			this.player,
-			this.ingredients,
-			this.handleIngredientInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.stations,
-			this.handleStationInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.plates,
-			this.handlePlateInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.washStation,
-			this.handleWashStationInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.trash,
-			this.handleTrashInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.groundItems,
-			this.handleGroundItemInteraction,
-			null,
-			this
-		);
-		this.physics.add.overlap(
-			this.player,
-			this.extinguisher,
-			this.handleExtinguisherInteraction,
-			null,
-			this
-		);
+		// 玩家与墙壁碰撞
+		if (this.walls) {
+			// 只有在玩家存在时才设置碰撞
+			if (this.player) {
+				this.physics.add.collider(this.player, this.walls);
+			}
+		}
+
+		// 设置重叠检测 - 只有在玩家存在时才设置
+		if (this.player) {
+			this.physics.add.overlap(
+				this.player,
+				this.ingredients,
+				this.handleIngredientInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.stations,
+				this.handleStationInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.plates,
+				this.handlePlateInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.washStations,
+				this.handleWashStationInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.trash,
+				this.handleTrashInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.groundItems,
+				this.handleGroundItemInteraction,
+				null,
+				this
+			);
+			this.physics.add.overlap(
+				this.player,
+				this.extinguisher,
+				this.handleExtinguisherInteraction,
+				null,
+				this
+			);
+		} else {
+			console.log('⚠️ 玩家尚未创建，跳过碰撞检测设置');
+		}
 	}
 
 	setupParticleEffects() {
@@ -2174,7 +2435,7 @@ export default class GameScene extends Phaser.Scene {
 			.text(
 				10,
 				550,
-				'WASD: 移动 | 空格: 拾取/放下/取回/出餐 | E: 使用工作台/拿起盘子/洗碗 | Q: 放置到地面',
+				'WASD: 移动 | 空格: 放置/取出物品/出餐 | E: 拾取/放下盘子/使用工作台/洗碗 | Q: 放置到地面',
 				{
 					fontSize: '14px',
 					fill: '#FFFFFF',
@@ -2392,36 +2653,53 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	handlePlayerMovement() {
-		// 确保玩家对象存在
-		if (!this.player) {
-			console.warn('⚠️ 玩家对象不存在，跳过移动处理');
-			return;
-		}
+		if (!this.player || this.gameEnded) return;
 
-		const speed = this.gameConfig.playerSpeed;
-		let velocityX = 0;
-		let velocityY = 0;
+		const cursors = this.cursors;
+		const speed = 160;
+		let isMoving = false;
+		let newDirection = this.player.direction;
+
+		// 重置速度
+		this.player.setVelocity(0);
 
 		// 处理移动输入
-		if (this.cursors.left.isDown || this.wasdKeys.A.isDown) {
-			velocityX = -speed;
-		} else if (this.cursors.right.isDown || this.wasdKeys.D.isDown) {
-			velocityX = speed;
+		if (cursors.left.isDown) {
+			this.player.setVelocityX(-speed);
+			newDirection = 'left';
+			isMoving = true;
+		} else if (cursors.right.isDown) {
+			this.player.setVelocityX(speed);
+			newDirection = 'right';
+			isMoving = true;
 		}
 
-		if (this.cursors.up.isDown || this.wasdKeys.W.isDown) {
-			velocityY = -speed;
-		} else if (this.cursors.down.isDown || this.wasdKeys.S.isDown) {
-			velocityY = speed;
+		if (cursors.up.isDown) {
+			this.player.setVelocityY(-speed);
+			newDirection = 'up';
+			isMoving = true;
+		} else if (cursors.down.isDown) {
+			this.player.setVelocityY(speed);
+			newDirection = 'down';
+			isMoving = true;
 		}
 
-		this.player.setVelocity(velocityX, velocityY);
+		// 更新角色方向
+		if (newDirection !== this.player.direction) {
+			this.player.direction = newDirection;
+		}
 
-		// 简单的行走动画效果
-		if (velocityX !== 0 || velocityY !== 0) {
-			this.player.setTint(0xf0f0f0);
+		// 播放相应的动画
+		const characterType = this.player.characterType || 'edward';
+		if (isMoving) {
+			this.player.anims.play(`${characterType}_walk_${newDirection}`, true);
 		} else {
-			this.player.clearTint();
+			this.player.anims.play(`${characterType}_idle_${newDirection}`, true);
+		}
+
+		// 多人游戏同步位置
+		if (this.gameMode === 'multiplayer') {
+			this.syncPlayerPosition();
 		}
 	}
 
@@ -2461,19 +2739,20 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	clearHighlights() {
+		// 清除所有高亮效果
 		this.ingredients.children.entries.forEach((item) => item.clearTint());
 		this.stations.children.entries.forEach((station) => station.clearTint());
 		this.plates.children.entries.forEach((plate) => plate.clearTint());
-		this.washStation.children.entries.forEach((washStation) =>
+		this.washStations.children.entries.forEach((washStation) =>
 			washStation.clearTint()
 		);
-		this.trash.children.entries.forEach((trash) => trash.clearTint());
+		this.trash.clearTint();
 		this.groundItems.children.entries.forEach((groundItem) =>
 			groundItem.clearTint()
 		);
-		this.extinguisher.children.entries.forEach((extinguisher) =>
-			extinguisher.clearTint()
-		);
+		if (this.extinguisher) {
+			this.extinguisher.clearTint();
+		}
 	}
 
 	getNearbyInteractableObjects() {
@@ -2521,7 +2800,7 @@ export default class GameScene extends Phaser.Scene {
 		});
 
 		// 检查洗碗槽
-		this.washStation.children.entries.forEach((washStation) => {
+		this.washStations.children.entries.forEach((washStation) => {
 			if (
 				Phaser.Math.Distance.Between(
 					playerX,
@@ -2535,14 +2814,17 @@ export default class GameScene extends Phaser.Scene {
 		});
 
 		// 检查垃圾桶
-		this.trash.children.entries.forEach((trash) => {
-			if (
-				Phaser.Math.Distance.Between(playerX, playerY, trash.x, trash.y) <
-				distance
-			) {
-				nearby.push(trash);
-			}
-		});
+		if (
+			this.trash &&
+			Phaser.Math.Distance.Between(
+				playerX,
+				playerY,
+				this.trash.x,
+				this.trash.y
+			) < distance
+		) {
+			nearby.push(this.trash);
+		}
 
 		// 检查地面物品
 		this.groundItems.children.entries.forEach((groundItem) => {
@@ -2559,21 +2841,19 @@ export default class GameScene extends Phaser.Scene {
 		});
 
 		// 检查灭火器
-		this.extinguisher.children.entries.forEach((extinguisher) => {
-			// 只检测可见且活跃的灭火器
-			if (
-				extinguisher.active &&
-				extinguisher.visible &&
-				Phaser.Math.Distance.Between(
-					playerX,
-					playerY,
-					extinguisher.x,
-					extinguisher.y
-				) < distance
-			) {
-				nearby.push(extinguisher);
-			}
-		});
+		if (
+			this.extinguisher &&
+			this.extinguisher.active &&
+			this.extinguisher.visible &&
+			Phaser.Math.Distance.Between(
+				playerX,
+				playerY,
+				this.extinguisher.x,
+				this.extinguisher.y
+			) < distance
+		) {
+			nearby.push(this.extinguisher);
+		}
 
 		return nearby;
 	}
@@ -2834,6 +3114,7 @@ export default class GameScene extends Phaser.Scene {
 		const plateType = plate.getData('plateType') || 'clean'; // clean, dirty
 
 		if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+			// 空格键：放置/取出物品（不涉及盘子本身的拾取）
 			if (this.playerHolding) {
 				// 玩家手持物品的情况
 				if (
@@ -2845,8 +3126,8 @@ export default class GameScene extends Phaser.Scene {
 				} else if (this.playerHolding.type === 'prepared_plate') {
 					// 手持装好的盘子，放下装好的盘子
 					this.placePreparedPlateOnGround(this.player.x, this.player.y);
-				} else if (plateType === 'clean' && contents.length === 0) {
-					// 空的干净盘子，将手持物品放到盘子上
+				} else if (plateType === 'clean' && plate.visible) {
+					// 对着可见的干净盘子，将手持物品放到盘子上
 					contents.push(this.playerHolding.type);
 					plate.setData('contents', contents);
 
@@ -2856,23 +3137,12 @@ export default class GameScene extends Phaser.Scene {
 					);
 					this.playerHolding = null;
 
-					// 发送游戏状态更新事件
-					this.emitGameStateUpdate();
-
-					// 多人游戏：同步盘子状态
-					if (this.gameMode === 'multiplayer') {
-						this.syncPlateState(plate);
-					}
-				} else if (plateType === 'clean' && contents.length > 0) {
-					// 有内容的盘子，将手持物品放到盘子上
-					contents.push(this.playerHolding.type);
-					plate.setData('contents', contents);
-
-					this.showMessage(
-						`将 ${this.getItemDisplayName(this.playerHolding.type)} 放到盘子上`,
-						0x2ed573
-					);
-					this.playerHolding = null;
+					console.log('🍽️ 将物品放到盘子上:', {
+						plateId: plate.getData('plateId'),
+						newContents: contents,
+						plateVisible: plate.visible,
+						plateType: plateType,
+					});
 
 					// 发送游戏状态更新事件
 					this.emitGameStateUpdate();
@@ -2885,118 +3155,167 @@ export default class GameScene extends Phaser.Scene {
 					this.showMessage('无法将物品放到这个盘子上', 0xff6b6b);
 				}
 			} else {
-				// 玩家手上没有物品的情况
-				if (plateType === 'dirty') {
-					// 拾取脏盘子 - 记录盘子ID并隐藏盘子
-					this.playerHolding = {
-						type: 'dirty_plate',
-						plateId: plate.getData('plateId'),
-					};
-
-					// 只隐藏盘子，但保持active状态（这样其他玩家仍可交互）
-					plate.setVisible(false);
-					// 不设置 setActive(false)，保持盘子可交互
-
-					console.log('🍽️ 拾取脏盘子:', {
-						plateId: plate.getData('plateId'),
-						playerHolding: this.playerHolding,
-						plateVisible: false,
-						plateActive: true, // 保持活跃状态
-					});
-
-					this.showMessage('拾取了脏盘子，去洗碗槽清洗', 0x2ed573);
-
-					// 多人游戏：立即同步盘子状态
-					if (this.gameMode === 'multiplayer') {
-						this.syncPlateState(plate);
-						this.syncPlayerPosition(); // 同步手持物品
-					}
-				} else if (contents.length === 0) {
-					// 拾取空的干净盘子 - 记录盘子ID并隐藏盘子
-					this.playerHolding = {
-						type: 'plate',
-						plateId: plate.getData('plateId'),
-					};
-
-					// 只隐藏盘子，但保持active状态（这样其他玩家仍可交互）
-					plate.setVisible(false);
-					// 不设置 setActive(false)，保持盘子可交互
-
-					console.log('🍽️ 拾取干净盘子:', {
-						plateId: plate.getData('plateId'),
-						playerHolding: this.playerHolding,
-						plateVisible: false,
-						plateActive: true, // 保持活跃状态
-					});
-
-					this.showMessage('拾取了空盘子', 0x2ed573);
-
-					// 多人游戏：立即同步盘子状态
-					if (this.gameMode === 'multiplayer') {
-						this.syncPlateState(plate);
-						this.syncPlayerPosition(); // 同步手持物品
-					}
-				} else if (contents.length > 0) {
-					// 直接取回最后一个食材，不需要额外确认
+				// 玩家手上没有物品的情况 - 从盘子中取出物品
+				if (plateType === 'clean' && contents.length > 0 && plate.visible) {
+					// 从有内容的盘子中取出最后一个物品
 					const lastItem = contents.pop();
 					plate.setData('contents', contents);
 					this.playerHolding = { type: lastItem };
 
 					this.showMessage(
-						`从盘子中取回了 ${this.getItemDisplayName(lastItem)}`,
+						`从盘子中取出了 ${this.getItemDisplayName(lastItem)}`,
 						0x2ed573
 					);
+
+					console.log('🍽️ 从盘子中取出物品:', {
+						plateId: plate.getData('plateId'),
+						takenItem: lastItem,
+						remainingContents: contents,
+					});
 
 					// 多人游戏：同步盘子状态
 					if (this.gameMode === 'multiplayer') {
 						this.syncPlateState(plate);
 						this.syncPlayerPosition(); // 同步手持物品
 					}
-				}
 
-				// 发送游戏状态更新事件
-				this.emitGameStateUpdate();
+					// 发送游戏状态更新事件
+					this.emitGameStateUpdate();
+				} else if (
+					plateType === 'clean' &&
+					contents.length === 0 &&
+					plate.visible
+				) {
+					this.showMessage('盘子是空的，用E键可以拾取空盘子', 0xffa502);
+				} else if (plateType === 'dirty' && plate.visible) {
+					this.showMessage('脏盘子需要先清洗，用E键拾取脏盘子', 0xffa502);
+				} else if (!plate.visible) {
+					this.showMessage('盘子已被其他玩家拾取', 0xff6b6b);
+				}
 			}
 		} else if (Phaser.Input.Keyboard.JustDown(this.eKey)) {
-			if (plateType === 'clean' && contents.length > 0 && !this.playerHolding) {
-				// E键：拿起整个装好的盘子
-				this.playerHolding = {
-					type: 'prepared_plate',
-					contents: [...contents],
-					plateId: plate.getData('plateId'), // 记录被使用的盘子ID
-				};
-				plate.setData('contents', []);
+			// E键：拾取/放下盘子本身
+			if (this.playerHolding) {
+				// 玩家手持物品时的E键操作
+				if (
+					plateType === 'clean' &&
+					contents.length > 0 &&
+					!this.playerHolding &&
+					plate.visible
+				) {
+					// 拿起整个装好的盘子（只有在手上没有物品时才能操作）
+					this.playerHolding = {
+						type: 'prepared_plate',
+						contents: [...contents],
+						plateId: plate.getData('plateId'),
+					};
+					plate.setData('contents', []);
+					plate.setVisible(false);
 
-				// 隐藏被使用的盘子（因为现在在玩家手中）
-				plate.setVisible(false);
-				// 不设置 setActive(false)，保持盘子可交互（其他玩家仍可看到状态变化）
+					const contentsDisplay = contents
+						.map((item) => this.getItemDisplayName(item))
+						.join(', ');
+					this.showMessage(`拿起了装有 ${contentsDisplay} 的盘子`, 0x2ed573);
 
-				const contentsDisplay = contents
-					.map((item) => this.getItemDisplayName(item))
-					.join(', ');
-				this.showMessage(`拿起了装有 ${contentsDisplay} 的盘子`, 0x2ed573);
+					console.log('🍽️ 拿起装好的盘子:', {
+						plateId: plate.getData('plateId'),
+						contents: contents,
+					});
 
-				console.log('🍽️ 拿起装好的盘子:', {
-					plateId: plate.getData('plateId'),
-					contents: contents,
-					plateHidden: true,
-					plateActive: true, // 保持活跃状态
-				});
+					// 多人游戏：同步盘子状态和手持物品
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlateState(plate);
+						this.syncPlayerPosition();
+					}
 
-				// 多人游戏：同步盘子状态和手持物品
-				if (this.gameMode === 'multiplayer') {
-					this.syncPlateState(plate);
-					this.syncPlayerPosition(); // 同步手持物品
+					this.emitGameStateUpdate();
+				} else {
+					this.showMessage('手上已有物品，无法拾取盘子', 0xff6b6b);
 				}
-
-				// 发送游戏状态更新事件
-				this.emitGameStateUpdate();
-			} else if (plateType === 'clean' && contents.length === 0) {
-				this.showMessage('盘子是空的，用空格键可以拾取空盘子', 0xffa502);
-			} else if (plateType === 'dirty') {
-				this.showMessage('脏盘子需要先清洗，用空格键拾取', 0xffa502);
 			} else {
-				this.showMessage('手上已有物品，无法拿起盘子', 0xff6b6b);
+				// 玩家手上没有物品时的E键操作
+				if (plateType === 'dirty' && plate.visible) {
+					// 拾取脏盘子
+					this.playerHolding = {
+						type: 'dirty_plate',
+						plateId: plate.getData('plateId'),
+					};
+					plate.setVisible(false);
+
+					console.log('🍽️ 拾取脏盘子:', {
+						plateId: plate.getData('plateId'),
+						playerHolding: this.playerHolding,
+					});
+
+					this.showMessage('拾取了脏盘子，去洗碗槽清洗', 0x2ed573);
+
+					// 多人游戏：同步盘子状态和手持物品
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlateState(plate);
+						this.syncPlayerPosition();
+					}
+
+					this.emitGameStateUpdate();
+				} else if (
+					plateType === 'clean' &&
+					contents.length === 0 &&
+					plate.visible
+				) {
+					// 拾取空的干净盘子
+					this.playerHolding = {
+						type: 'plate',
+						plateId: plate.getData('plateId'),
+					};
+					plate.setVisible(false);
+
+					console.log('🍽️ 拾取干净盘子:', {
+						plateId: plate.getData('plateId'),
+						playerHolding: this.playerHolding,
+					});
+
+					this.showMessage('拾取了空盘子', 0x2ed573);
+
+					// 多人游戏：同步盘子状态和手持物品
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlateState(plate);
+						this.syncPlayerPosition();
+					}
+
+					this.emitGameStateUpdate();
+				} else if (
+					plateType === 'clean' &&
+					contents.length > 0 &&
+					plate.visible
+				) {
+					// 拿起整个装好的盘子
+					this.playerHolding = {
+						type: 'prepared_plate',
+						contents: [...contents],
+						plateId: plate.getData('plateId'),
+					};
+					plate.setData('contents', []);
+					plate.setVisible(false);
+
+					const contentsDisplay = contents
+						.map((item) => this.getItemDisplayName(item))
+						.join(', ');
+					this.showMessage(`拿起了装有 ${contentsDisplay} 的盘子`, 0x2ed573);
+
+					console.log('🍽️ 拿起装好的盘子:', {
+						plateId: plate.getData('plateId'),
+						contents: contents,
+					});
+
+					// 多人游戏：同步盘子状态和手持物品
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlateState(plate);
+						this.syncPlayerPosition();
+					}
+
+					this.emitGameStateUpdate();
+				} else if (!plate.visible) {
+					this.showMessage('盘子已被其他玩家拾取', 0xff6b6b);
+				}
 			}
 		}
 	}
@@ -3777,14 +4096,41 @@ export default class GameScene extends Phaser.Scene {
 				cleanPlatePosition.y,
 				'plate'
 			);
+
+			// 设置盘子的基本属性
 			cleanPlate.setData('plateType', 'clean');
 			cleanPlate.setData('contents', []);
-
 			cleanPlate.setData('plateId', plateId); // 保持相同的ID
 			cleanPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
+
+			// 设置物理属性 - 确保与初始盘子一致
 			cleanPlate.setSize(28, 28);
 			cleanPlate.setVisible(true);
 			cleanPlate.setActive(true);
+
+			// 确保物理体正确设置（staticGroup会自动创建物理体）
+			if (cleanPlate.body) {
+				cleanPlate.body.setSize(28, 28);
+				cleanPlate.body.updateFromGameObject(); // 强制更新物理体位置
+			}
+
+			// 强制刷新物理体（确保碰撞检测正常工作）
+			cleanPlate.refreshBody();
+
+			console.log('🚿 创建新的干净盘子，属性检查:', {
+				plateId,
+				plateType: cleanPlate.getData('plateType'),
+				contents: cleanPlate.getData('contents'),
+				visible: cleanPlate.visible,
+				active: cleanPlate.active,
+				texture: cleanPlate.texture.key,
+				position: { x: cleanPlate.x, y: cleanPlate.y },
+				inPlatesGroup: this.plates.children.entries.includes(cleanPlate),
+				hasBody: !!cleanPlate.body,
+				bodySize: cleanPlate.body
+					? { width: cleanPlate.body.width, height: cleanPlate.body.height }
+					: null,
+			});
 
 			// 从盘子池中移除脏盘子，添加新的干净盘子
 			const poolIndex = this.platePool.findIndex((p) => p === washingPlate);
@@ -3966,14 +4312,20 @@ export default class GameScene extends Phaser.Scene {
 				} else {
 					console.warn('⚠️ 找不到对应的盘子，创建新盘子');
 					// 如果找不到对应的盘子，创建新盘子（向后兼容）
-					const plate = this.plates.create(x, y, 'plate');
+					const plateTexture = this.textures.exists('new_plate')
+						? 'new_plate'
+						: 'plate';
+					const plate = this.plates.create(x, y, plateTexture);
 					plate.setData('contents', [...this.playerHolding.contents]);
 					plate.setData('plateType', 'clean');
 					plate.setSize(28, 28);
 				}
 			} else {
 				// 如果没有plateId，创建新盘子（向后兼容）
-				const plate = this.plates.create(x, y, 'plate');
+				const plateTexture = this.textures.exists('new_plate')
+					? 'new_plate'
+					: 'plate';
+				const plate = this.plates.create(x, y, plateTexture);
 				plate.setData('contents', [...this.playerHolding.contents]);
 				plate.setData('plateType', 'clean');
 				plate.setSize(28, 28);
@@ -4552,5 +4904,92 @@ export default class GameScene extends Phaser.Scene {
 		return this.plates.children.entries.find(
 			(plate) => plate.getData('plateId') === id
 		);
+	}
+
+	setupPlayerCollisions() {
+		if (!this.player) {
+			console.log('⚠️ 玩家不存在，无法设置碰撞检测');
+			return;
+		}
+
+		console.log('🎯 设置玩家碰撞检测...');
+
+		// 玩家与墙壁碰撞
+		if (this.walls) {
+			this.physics.add.collider(this.player, this.walls);
+		}
+
+		// 设置重叠检测
+		if (this.ingredients) {
+			this.physics.add.overlap(
+				this.player,
+				this.ingredients,
+				this.handleIngredientInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.stations) {
+			this.physics.add.overlap(
+				this.player,
+				this.stations,
+				this.handleStationInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.plates) {
+			this.physics.add.overlap(
+				this.player,
+				this.plates,
+				this.handlePlateInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.washStations) {
+			this.physics.add.overlap(
+				this.player,
+				this.washStations,
+				this.handleWashStationInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.trash) {
+			this.physics.add.overlap(
+				this.player,
+				this.trash,
+				this.handleTrashInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.groundItems) {
+			this.physics.add.overlap(
+				this.player,
+				this.groundItems,
+				this.handleGroundItemInteraction,
+				null,
+				this
+			);
+		}
+
+		if (this.extinguisher) {
+			this.physics.add.overlap(
+				this.player,
+				this.extinguisher,
+				this.handleExtinguisherInteraction,
+				null,
+				this
+			);
+		}
+
+		console.log('✅ 玩家碰撞检测设置完成');
 	}
 }
