@@ -108,529 +108,418 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	preload() {
-		// 创建高质量像素风格图形
+		// 加载地板和墙壁资源
+		this.load.image('floor_tile', 'src/assets/floor/floor.png');
+		this.load.image('wall_tile', 'src/assets/wall/wall.png');
+
+		// 加载Edward角色动画帧
+		this.load.image(
+			'edward_down_0',
+			'src/assets/character/Edward/Edward-down-0.png'
+		);
+		this.load.image(
+			'edward_down_1',
+			'src/assets/character/Edward/Edward-down-1.png'
+		);
+		this.load.image(
+			'edward_down_2',
+			'src/assets/character/Edward/Edward-down-2.png'
+		);
+		this.load.image(
+			'edward_down_3',
+			'src/assets/character/Edward/Edward-down-3.png'
+		);
+		this.load.image(
+			'edward_up_0',
+			'src/assets/character/Edward/Edward-up-0.png'
+		);
+		this.load.image(
+			'edward_up_1',
+			'src/assets/character/Edward/Edward-up-1.png'
+		);
+		this.load.image(
+			'edward_up_2',
+			'src/assets/character/Edward/Edward-up-2.png'
+		);
+		this.load.image(
+			'edward_up_3',
+			'src/assets/character/Edward/Edward-up-3.png'
+		);
+		this.load.image(
+			'edward_left_0',
+			'src/assets/character/Edward/Edward-left-0.png'
+		);
+		this.load.image(
+			'edward_left_1',
+			'src/assets/character/Edward/Edward-left-1.png'
+		);
+		this.load.image(
+			'edward_left_2',
+			'src/assets/character/Edward/Edward-left-2.png'
+		);
+		this.load.image(
+			'edward_left_3',
+			'src/assets/character/Edward/Edward-left-3.png'
+		);
+		this.load.image(
+			'edward_right_0',
+			'src/assets/character/Edward/Edward-right-0.png'
+		);
+		this.load.image(
+			'edward_right_1',
+			'src/assets/character/Edward/Edward-right-1.png'
+		);
+		this.load.image(
+			'edward_right_2',
+			'src/assets/character/Edward/Edward-right-2.png'
+		);
+		this.load.image(
+			'edward_right_3',
+			'src/assets/character/Edward/Edward-right-3.png'
+		);
+
+		// 加载Abby角色动画帧
+		this.load.image('abby_down_0', 'src/assets/character/Abby/Abby-down-0.png');
+		this.load.image('abby_down_1', 'src/assets/character/Abby/Abby-down-1.png');
+		this.load.image('abby_down_2', 'src/assets/character/Abby/Abby-down-2.png');
+		this.load.image('abby_down_3', 'src/assets/character/Abby/Abby-down-3.png');
+		this.load.image('abby_up_0', 'src/assets/character/Abby/Abby-up-0.png');
+		this.load.image('abby_up_1', 'src/assets/character/Abby/Abby-up-1.png');
+		this.load.image('abby_up_2', 'src/assets/character/Abby/Abby-up-2.png');
+		this.load.image('abby_up_3', 'src/assets/character/Abby/Abby-up-3.png');
+		this.load.image('abby_left_0', 'src/assets/character/Abby/Abby-left-0.png');
+		this.load.image('abby_left_1', 'src/assets/character/Abby/Abby-left-1.png');
+		this.load.image('abby_left_2', 'src/assets/character/Abby/Abby-left-2.png');
+		this.load.image('abby_left_3', 'src/assets/character/Abby/Abby-left-3.png');
+		this.load.image(
+			'abby_right_0',
+			'src/assets/character/Abby/Abby-right-0.png'
+		);
+		this.load.image(
+			'abby_right_1',
+			'src/assets/character/Abby/Abby-right-1.png'
+		);
+		this.load.image(
+			'abby_right_2',
+			'src/assets/character/Abby/Abby-right-2.png'
+		);
+		this.load.image(
+			'abby_right_3',
+			'src/assets/character/Abby/Abby-right-3.png'
+		);
+
+		// 加载工作台和物品资源
+		this.load.image('cutting_station', 'src/assets/item/切菜台.png');
+		this.load.image('cooking_station', 'src/assets/item/烹饪台.png');
+		this.load.image('serving_station', 'src/assets/item/出餐台.png');
+		this.load.image('wash_station', 'src/assets/item/洗碗台.png');
+		this.load.image('plate_sprite', 'src/assets/item/盘子.png');
+
+		// 创建食材和其他物品的像素艺术图形
 		this.createPixelArt();
 	}
 
 	createPixelArt() {
-		// 创建厨房地板纹理
-		const floorGraphics = this.add.graphics();
-		floorGraphics.fillStyle(0xf4e4bc); // 木质地板色
-		floorGraphics.fillRect(0, 0, 64, 64);
-
-		// 添加地板纹理细节
-		floorGraphics.fillStyle(0xe6d3a3);
-		for (let i = 0; i < 64; i += 8) {
-			floorGraphics.fillRect(i, 0, 2, 64);
-			floorGraphics.fillRect(0, i, 64, 2);
-		}
-		floorGraphics.generateTexture('floor_tile', 64, 64);
-		floorGraphics.destroy();
-
-		// 创建墙壁纹理
-		const wallGraphics = this.add.graphics();
-		wallGraphics.fillStyle(0x8b7355); // 棕色墙壁
-		wallGraphics.fillRect(0, 0, 64, 64);
-		wallGraphics.fillStyle(0xa0845c);
-		wallGraphics.fillRect(4, 4, 56, 56);
-		wallGraphics.generateTexture('wall_tile', 64, 64);
-		wallGraphics.destroy();
-
-		// 创建精细的男性厨师角色
-		const chefMaleGraphics = this.add.graphics();
-		// 身体 (白色厨师服)
-		chefMaleGraphics.fillStyle(0xffffff);
-		chefMaleGraphics.fillRect(8, 12, 16, 20);
-		// 头部 (肤色)
-		chefMaleGraphics.fillStyle(0xfdbcb4);
-		chefMaleGraphics.fillRect(10, 4, 12, 12);
-		// 厨师帽
-		chefMaleGraphics.fillStyle(0xffffff);
-		chefMaleGraphics.fillRect(8, 0, 16, 8);
-		chefMaleGraphics.fillRect(12, 0, 8, 4);
-		// 眼睛
-		chefMaleGraphics.fillStyle(0x000000);
-		chefMaleGraphics.fillRect(12, 8, 2, 2);
-		chefMaleGraphics.fillRect(18, 8, 2, 2);
-		// 围裙
-		chefMaleGraphics.fillStyle(0xe8e8e8);
-		chefMaleGraphics.fillRect(10, 16, 12, 12);
-		// 手臂
-		chefMaleGraphics.fillStyle(0xfdbcb4);
-		chefMaleGraphics.fillRect(4, 14, 6, 8);
-		chefMaleGraphics.fillRect(22, 14, 6, 8);
-		// 腿部
-		chefMaleGraphics.fillStyle(0x4a4a4a);
-		chefMaleGraphics.fillRect(10, 28, 5, 8);
-		chefMaleGraphics.fillRect(17, 28, 5, 8);
-		chefMaleGraphics.generateTexture('chef_male', 32, 36);
-		chefMaleGraphics.destroy();
-
-		// 创建精细的女性厨师角色
-		const chefFemaleGraphics = this.add.graphics();
-		// 身体 (白色厨师服)
-		chefFemaleGraphics.fillStyle(0xffffff);
-		chefFemaleGraphics.fillRect(8, 12, 16, 20);
-		// 头部 (肤色)
-		chefFemaleGraphics.fillStyle(0xfdbcb4);
-		chefFemaleGraphics.fillRect(10, 4, 12, 12);
-		// 长发
-		chefFemaleGraphics.fillStyle(0x8b4513);
-		chefFemaleGraphics.fillRect(8, 4, 16, 14);
-		chefFemaleGraphics.fillRect(6, 6, 20, 10);
-		// 厨师帽
-		chefFemaleGraphics.fillStyle(0xffffff);
-		chefFemaleGraphics.fillRect(8, 0, 16, 8);
-		chefFemaleGraphics.fillRect(12, 0, 8, 4);
-		// 眼睛
-		chefFemaleGraphics.fillStyle(0x000000);
-		chefFemaleGraphics.fillRect(12, 8, 2, 2);
-		chefFemaleGraphics.fillRect(18, 8, 2, 2);
-		// 围裙 (粉色)
-		chefFemaleGraphics.fillStyle(0xffb6c1);
-		chefFemaleGraphics.fillRect(10, 16, 12, 12);
-		// 手臂
-		chefFemaleGraphics.fillStyle(0xfdbcb4);
-		chefFemaleGraphics.fillRect(4, 14, 6, 8);
-		chefFemaleGraphics.fillRect(22, 14, 6, 8);
-		// 腿部
-		chefFemaleGraphics.fillStyle(0x4a4a4a);
-		chefFemaleGraphics.fillRect(10, 28, 5, 8);
-		chefFemaleGraphics.fillRect(17, 28, 5, 8);
-		chefFemaleGraphics.generateTexture('chef_female', 32, 36);
-		chefFemaleGraphics.destroy();
-
-		// 创建精美的食材
-		this.createIngredientSprites();
-		this.createStationSprites();
-		this.createUISprites();
-	}
-
-	createIngredientSprites() {
-		// 精美番茄 - 参考真实番茄
-		const tomatoGraphics = this.add.graphics();
-		// 主体红色
-		tomatoGraphics.fillStyle(0xe53e3e); // 鲜艳红色
-		tomatoGraphics.fillCircle(16, 18, 11);
-		// 顶部凹陷
-		tomatoGraphics.fillStyle(0xc53030);
-		tomatoGraphics.fillCircle(16, 12, 8);
-		// 绿色蒂部
-		tomatoGraphics.fillStyle(0x38a169);
-		tomatoGraphics.fillRect(13, 8, 6, 4);
-		tomatoGraphics.fillRect(15, 6, 2, 6);
-		// 高光效果
-		tomatoGraphics.fillStyle(0xff6b6b);
-		tomatoGraphics.fillCircle(12, 14, 3);
-		tomatoGraphics.fillCircle(20, 16, 2);
-		// 阴影
-		tomatoGraphics.fillStyle(0xc53030);
-		tomatoGraphics.fillCircle(18, 22, 4);
-		tomatoGraphics.generateTexture('tomato', 32, 32);
-		tomatoGraphics.destroy();
-
-		// 切好的番茄 - 更真实的切片
-		const choppedTomatoGraphics = this.add.graphics();
-		// 番茄片1
-		choppedTomatoGraphics.fillStyle(0xe53e3e);
-		choppedTomatoGraphics.fillCircle(10, 16, 6);
-		choppedTomatoGraphics.fillStyle(0xff8e8e);
-		choppedTomatoGraphics.fillCircle(10, 16, 4);
-		// 番茄籽
-		choppedTomatoGraphics.fillStyle(0xfff5b7);
-		choppedTomatoGraphics.fillCircle(8, 15, 1);
-		choppedTomatoGraphics.fillCircle(12, 17, 1);
-
-		// 番茄片2
-		choppedTomatoGraphics.fillStyle(0xe53e3e);
-		choppedTomatoGraphics.fillCircle(22, 16, 6);
-		choppedTomatoGraphics.fillStyle(0xff8e8e);
-		choppedTomatoGraphics.fillCircle(22, 16, 4);
-		// 番茄籽
-		choppedTomatoGraphics.fillStyle(0xfff5b7);
-		choppedTomatoGraphics.fillCircle(20, 15, 1);
-		choppedTomatoGraphics.fillCircle(24, 17, 1);
-		choppedTomatoGraphics.generateTexture('chopped_tomato', 32, 32);
-		choppedTomatoGraphics.destroy();
-
-		// 烹饪番茄 - 焦糖化效果
-		const cookedTomatoGraphics = this.add.graphics();
-		cookedTomatoGraphics.fillStyle(0xb91c1c); // 深红色
-		cookedTomatoGraphics.fillRect(6, 12, 20, 8);
-		cookedTomatoGraphics.fillStyle(0x991b1b);
-		cookedTomatoGraphics.fillRect(8, 14, 16, 4);
-		// 焦糖边缘
-		cookedTomatoGraphics.fillStyle(0x7f1d1d);
-		cookedTomatoGraphics.fillRect(6, 12, 20, 2);
-		cookedTomatoGraphics.fillRect(6, 18, 20, 2);
-		// 蒸汽效果
-		cookedTomatoGraphics.fillStyle(0xf3f4f6);
-		cookedTomatoGraphics.fillCircle(10, 8, 1);
-		cookedTomatoGraphics.fillCircle(16, 6, 1);
-		cookedTomatoGraphics.fillCircle(22, 8, 1);
-		cookedTomatoGraphics.generateTexture('cooked_tomato', 32, 32);
-		cookedTomatoGraphics.destroy();
-
-		// 烤糊的番茄 - 黑色焦糊效果
-		const burntTomatoGraphics = this.add.graphics();
-		burntTomatoGraphics.fillStyle(0x1a1a1a); // 黑色
-		burntTomatoGraphics.fillRect(6, 12, 20, 8);
-		burntTomatoGraphics.fillStyle(0x0f0f0f);
-		burntTomatoGraphics.fillRect(8, 14, 16, 4);
-		// 焦糊边缘
-		burntTomatoGraphics.fillStyle(0x2d1b1b);
-		burntTomatoGraphics.fillRect(6, 12, 20, 2);
-		burntTomatoGraphics.fillRect(6, 18, 20, 2);
-		// 烟雾效果
-		burntTomatoGraphics.fillStyle(0x666666);
-		burntTomatoGraphics.fillCircle(10, 8, 1);
-		burntTomatoGraphics.fillCircle(16, 6, 1);
-		burntTomatoGraphics.fillCircle(22, 8, 1);
-		burntTomatoGraphics.generateTexture('burnt_tomato', 32, 32);
-		burntTomatoGraphics.destroy();
-
-		// 精美生菜 - 层次丰富
+		// 创建食材图形 - 生菜
 		const lettuceGraphics = this.add.graphics();
-		// 外层叶子 - 深绿
-		lettuceGraphics.fillStyle(0x16a34a);
-		lettuceGraphics.fillEllipse(16, 16, 24, 18);
-		// 中层叶子 - 中绿
-		lettuceGraphics.fillStyle(0x22c55e);
-		lettuceGraphics.fillEllipse(16, 16, 18, 14);
-		// 内层叶子 - 浅绿
-		lettuceGraphics.fillStyle(0x4ade80);
-		lettuceGraphics.fillEllipse(16, 16, 12, 10);
-		// 叶脉纹理
-		lettuceGraphics.fillStyle(0x15803d);
-		lettuceGraphics.fillRect(16, 8, 1, 16);
-		lettuceGraphics.fillRect(12, 12, 8, 1);
-		lettuceGraphics.fillRect(14, 20, 4, 1);
-		// 高光
-		lettuceGraphics.fillStyle(0x86efac);
-		lettuceGraphics.fillCircle(12, 12, 2);
+		lettuceGraphics.fillStyle(0x90ee90);
+		lettuceGraphics.fillCircle(16, 16, 12);
+		lettuceGraphics.fillStyle(0x228b22);
+		lettuceGraphics.fillCircle(16, 16, 8);
 		lettuceGraphics.generateTexture('lettuce', 32, 32);
 		lettuceGraphics.destroy();
 
-		// 切好的生菜 - 碎片效果
+		// 创建食材图形 - 番茄
+		const tomatoGraphics = this.add.graphics();
+		tomatoGraphics.fillStyle(0xff6347);
+		tomatoGraphics.fillCircle(16, 16, 12);
+		tomatoGraphics.fillStyle(0x228b22);
+		tomatoGraphics.fillRect(14, 4, 4, 8);
+		tomatoGraphics.generateTexture('tomato', 32, 32);
+		tomatoGraphics.destroy();
+
+		// 创建食材图形 - 面包
+		const breadGraphics = this.add.graphics();
+		breadGraphics.fillStyle(0xdeb887);
+		breadGraphics.fillRoundedRect(4, 8, 24, 16, 4);
+		breadGraphics.fillStyle(0xf4a460);
+		breadGraphics.fillRoundedRect(6, 10, 20, 12, 3);
+		breadGraphics.generateTexture('bread', 32, 32);
+		breadGraphics.destroy();
+
+		// 创建切好的食材图形
 		const choppedLettuceGraphics = this.add.graphics();
-		// 生菜碎片1
-		choppedLettuceGraphics.fillStyle(0x22c55e);
-		choppedLettuceGraphics.fillRect(6, 12, 6, 8);
-		choppedLettuceGraphics.fillStyle(0x4ade80);
-		choppedLettuceGraphics.fillRect(7, 13, 4, 6);
-
-		// 生菜碎片2
-		choppedLettuceGraphics.fillStyle(0x22c55e);
-		choppedLettuceGraphics.fillRect(14, 10, 8, 6);
-		choppedLettuceGraphics.fillStyle(0x4ade80);
-		choppedLettuceGraphics.fillRect(15, 11, 6, 4);
-
-		// 生菜碎片3
-		choppedLettuceGraphics.fillStyle(0x22c55e);
-		choppedLettuceGraphics.fillRect(20, 16, 6, 10);
-		choppedLettuceGraphics.fillStyle(0x4ade80);
-		choppedLettuceGraphics.fillRect(21, 17, 4, 8);
+		choppedLettuceGraphics.fillStyle(0x90ee90);
+		for (let i = 0; i < 3; i++) {
+			for (let j = 0; j < 3; j++) {
+				choppedLettuceGraphics.fillRect(6 + i * 6, 6 + j * 6, 4, 4);
+			}
+		}
 		choppedLettuceGraphics.generateTexture('chopped_lettuce', 32, 32);
 		choppedLettuceGraphics.destroy();
 
-		// 烹饪生菜 - 炒制效果
+		const choppedTomatoGraphics = this.add.graphics();
+		choppedTomatoGraphics.fillStyle(0xff6347);
+		for (let i = 0; i < 3; i++) {
+			for (let j = 0; j < 3; j++) {
+				choppedTomatoGraphics.fillRect(6 + i * 6, 6 + j * 6, 4, 4);
+			}
+		}
+		choppedTomatoGraphics.generateTexture('chopped_tomato', 32, 32);
+		choppedTomatoGraphics.destroy();
+
+		// 创建熟食图形
 		const cookedLettuceGraphics = this.add.graphics();
-		cookedLettuceGraphics.fillStyle(0x15803d); // 深绿色
-		cookedLettuceGraphics.fillRect(6, 12, 20, 8);
-		cookedLettuceGraphics.fillStyle(0x166534);
-		cookedLettuceGraphics.fillRect(8, 14, 16, 4);
-		// 炒制边缘
-		cookedLettuceGraphics.fillStyle(0x14532d);
-		cookedLettuceGraphics.fillRect(6, 12, 20, 2);
-		cookedLettuceGraphics.fillRect(6, 18, 20, 2);
-		// 蒸汽
-		cookedLettuceGraphics.fillStyle(0xf3f4f6);
-		cookedLettuceGraphics.fillCircle(12, 8, 1);
-		cookedLettuceGraphics.fillCircle(20, 6, 1);
+		cookedLettuceGraphics.fillStyle(0x6b8e23);
+		cookedLettuceGraphics.fillCircle(16, 16, 10);
+		cookedLettuceGraphics.fillStyle(0x556b2f);
+		cookedLettuceGraphics.fillCircle(16, 16, 6);
 		cookedLettuceGraphics.generateTexture('cooked_lettuce', 32, 32);
 		cookedLettuceGraphics.destroy();
 
-		// 烤糊的生菜 - 黑色焦糊效果
-		const burntLettuceGraphics = this.add.graphics();
-		burntLettuceGraphics.fillStyle(0x1a1a1a); // 黑色
-		burntLettuceGraphics.fillRect(6, 12, 20, 8);
-		burntLettuceGraphics.fillStyle(0x0f0f0f);
-		burntLettuceGraphics.fillRect(8, 14, 16, 4);
-		// 焦糊边缘
-		burntLettuceGraphics.fillStyle(0x1b2d1b);
-		burntLettuceGraphics.fillRect(6, 12, 20, 2);
-		burntLettuceGraphics.fillRect(6, 18, 20, 2);
-		// 烟雾效果
-		burntLettuceGraphics.fillStyle(0x666666);
-		burntLettuceGraphics.fillCircle(12, 8, 1);
-		burntLettuceGraphics.fillCircle(20, 6, 1);
-		burntLettuceGraphics.generateTexture('burnt_lettuce', 32, 32);
-		burntLettuceGraphics.destroy();
+		const cookedTomatoGraphics = this.add.graphics();
+		cookedTomatoGraphics.fillStyle(0xb22222);
+		cookedTomatoGraphics.fillCircle(16, 16, 10);
+		cookedTomatoGraphics.fillStyle(0x8b0000);
+		cookedTomatoGraphics.fillCircle(16, 16, 6);
+		cookedTomatoGraphics.generateTexture('cooked_tomato', 32, 32);
+		cookedTomatoGraphics.destroy();
 
-		// 精美面包 - 法式面包风格
-		const breadGraphics = this.add.graphics();
-		// 面包主体
-		breadGraphics.fillStyle(0xd97706); // 金黄色
-		breadGraphics.fillRoundedRect(4, 12, 24, 8, 3);
-		// 面包皮
-		breadGraphics.fillStyle(0xb45309);
-		breadGraphics.strokeRoundedRect(4, 12, 24, 8, 3);
-		// 面包纹理
-		breadGraphics.fillStyle(0xf59e0b);
-		breadGraphics.fillRect(8, 15, 2, 1);
-		breadGraphics.fillRect(12, 14, 2, 1);
-		breadGraphics.fillRect(16, 16, 2, 1);
-		breadGraphics.fillRect(20, 15, 2, 1);
-		// 高光
-		breadGraphics.fillStyle(0xfbbf24);
-		breadGraphics.fillRect(6, 13, 20, 1);
-		// 阴影
-		breadGraphics.fillStyle(0x92400e);
-		breadGraphics.fillRect(4, 19, 24, 1);
-		breadGraphics.generateTexture('bread', 32, 32);
-		breadGraphics.destroy();
-	}
+		// 创建烧焦食材图形
+		const burntGraphics = this.add.graphics();
+		burntGraphics.fillStyle(0x2f2f2f);
+		burntGraphics.fillCircle(16, 16, 10);
+		burntGraphics.fillStyle(0x000000);
+		burntGraphics.fillCircle(16, 16, 6);
+		burntGraphics.generateTexture('burnt_food', 32, 32);
+		burntGraphics.destroy();
 
-	createStationSprites() {
-		// 切菜台
-		const cuttingStationGraphics = this.add.graphics();
-		cuttingStationGraphics.fillStyle(0x8b4513); // 木质台面
-		cuttingStationGraphics.fillRect(0, 16, 64, 48);
-		cuttingStationGraphics.fillStyle(0xd2b48c); // 台面
-		cuttingStationGraphics.fillRect(4, 20, 56, 40);
-		// 切菜板
-		cuttingStationGraphics.fillStyle(0xf5deb3);
-		cuttingStationGraphics.fillRect(12, 28, 40, 24);
-		// 刀具
-		cuttingStationGraphics.fillStyle(0xc0c0c0);
-		cuttingStationGraphics.fillRect(20, 24, 2, 8);
-		cuttingStationGraphics.fillStyle(0x8b4513);
-		cuttingStationGraphics.fillRect(19, 20, 4, 6);
-		cuttingStationGraphics.generateTexture('cutting_station', 64, 64);
-		cuttingStationGraphics.destroy();
-
-		// 烹饪台
-		const cookingStationGraphics = this.add.graphics();
-		cookingStationGraphics.fillStyle(0x2c2c2c); // 炉灶
-		cookingStationGraphics.fillRect(0, 16, 64, 48);
-		cookingStationGraphics.fillStyle(0x404040);
-		cookingStationGraphics.fillRect(4, 20, 56, 40);
-		// 炉火
-		cookingStationGraphics.fillStyle(0xff6b6b);
-		cookingStationGraphics.fillCircle(20, 40, 8);
-		cookingStationGraphics.fillCircle(44, 40, 8);
-		cookingStationGraphics.fillStyle(0xffa502);
-		cookingStationGraphics.fillCircle(20, 40, 5);
-		cookingStationGraphics.fillCircle(44, 40, 5);
-		// 平底锅
-		cookingStationGraphics.fillStyle(0x2c2c2c);
-		cookingStationGraphics.fillCircle(32, 35, 12);
-		cookingStationGraphics.fillStyle(0x1a1a1a);
-		cookingStationGraphics.fillCircle(32, 35, 10);
-		cookingStationGraphics.generateTexture('cooking_station', 64, 64);
-		cookingStationGraphics.destroy();
-
-		// 出餐口 - 重新设计
-		const servingStationGraphics = this.add.graphics();
-		// 不锈钢台面
-		servingStationGraphics.fillStyle(0xe5e5e5); // 浅灰色不锈钢
-		servingStationGraphics.fillRect(0, 16, 64, 48);
-		servingStationGraphics.fillStyle(0xf8f8f8); // 亮面
-		servingStationGraphics.fillRect(4, 20, 56, 40);
-
-		// 出餐窗口边框
-		servingStationGraphics.fillStyle(0xc0c0c0);
-		servingStationGraphics.fillRect(8, 24, 48, 32);
-		servingStationGraphics.fillStyle(0xf0f0f0);
-		servingStationGraphics.fillRect(10, 26, 44, 28);
-
-		// 出餐标识
-		servingStationGraphics.fillStyle(0x2ed573); // 绿色标识
-		servingStationGraphics.fillRect(28, 30, 8, 4);
-		servingStationGraphics.fillRect(30, 28, 4, 8);
-
-		// 出餐灯
-		servingStationGraphics.fillStyle(0xffd700); // 金色出餐灯
-		servingStationGraphics.fillCircle(32, 20, 3);
-		servingStationGraphics.fillStyle(0xffed4e);
-		servingStationGraphics.fillCircle(32, 20, 2);
-
-		servingStationGraphics.generateTexture('serving_station', 64, 64);
-		servingStationGraphics.destroy();
-
-		// 洗碗槽
-		const washStationGraphics = this.add.graphics();
-		// 不锈钢水槽
-		washStationGraphics.fillStyle(0xd1d5db); // 银色
-		washStationGraphics.fillRect(0, 16, 64, 48);
-		washStationGraphics.fillStyle(0xe5e7eb); // 亮面
-		washStationGraphics.fillRect(4, 20, 56, 40);
-
-		// 水槽内部
-		washStationGraphics.fillStyle(0x9ca3af);
-		washStationGraphics.fillRect(8, 24, 48, 32);
-		washStationGraphics.fillStyle(0xb8c5d1);
-		washStationGraphics.fillRect(10, 26, 44, 28);
-
-		// 水龙头
-		washStationGraphics.fillStyle(0x6b7280);
-		washStationGraphics.fillRect(30, 16, 4, 8);
-		washStationGraphics.fillCircle(32, 16, 3);
-
-		// 水滴效果
-		washStationGraphics.fillStyle(0x3b82f6);
-		washStationGraphics.fillCircle(30, 30, 1);
-		washStationGraphics.fillCircle(34, 32, 1);
-		washStationGraphics.fillCircle(32, 35, 1);
-
-		washStationGraphics.generateTexture('wash_station', 64, 64);
-		washStationGraphics.destroy();
-
-		// 精美的盘子
-		const plateGraphics = this.add.graphics();
-		plateGraphics.fillStyle(0xffffff);
-		plateGraphics.fillCircle(16, 16, 14);
-		plateGraphics.lineStyle(2, 0xe0e0e0);
-		plateGraphics.strokeCircle(16, 16, 14);
-		plateGraphics.strokeCircle(16, 16, 10);
-		// 盘子光泽
-		plateGraphics.fillStyle(0xf8f8f8);
-		plateGraphics.fillCircle(12, 12, 3);
-		plateGraphics.generateTexture('plate', 32, 32);
-		plateGraphics.destroy();
-
-		// 装好的盘子（有食材的盘子）
-		const preparedPlateGraphics = this.add.graphics();
-		// 盘子底部
-		preparedPlateGraphics.fillStyle(0xffffff);
-		preparedPlateGraphics.fillCircle(16, 16, 14);
-		preparedPlateGraphics.lineStyle(2, 0xe0e0e0);
-		preparedPlateGraphics.strokeCircle(16, 16, 14);
-		preparedPlateGraphics.strokeCircle(16, 16, 10);
-
-		// 食材堆叠效果（模拟多种食材）
-		preparedPlateGraphics.fillStyle(0x22c55e); // 绿色（生菜）
-		preparedPlateGraphics.fillCircle(12, 14, 4);
-		preparedPlateGraphics.fillStyle(0xe53e3e); // 红色（番茄）
-		preparedPlateGraphics.fillCircle(20, 14, 4);
-		preparedPlateGraphics.fillStyle(0xd97706); // 金黄色（面包）
-		preparedPlateGraphics.fillRect(14, 18, 4, 2);
-
-		// 盘子光泽
-		preparedPlateGraphics.fillStyle(0xf8f8f8);
-		preparedPlateGraphics.fillCircle(12, 12, 2);
-		preparedPlateGraphics.generateTexture('prepared_plate', 32, 32);
-		preparedPlateGraphics.destroy();
-
-		// 脏盘子
-		const dirtyPlateGraphics = this.add.graphics();
-		dirtyPlateGraphics.fillStyle(0xf3f4f6); // 稍微暗一些的白色
-		dirtyPlateGraphics.fillCircle(16, 16, 14);
-		dirtyPlateGraphics.lineStyle(2, 0xd1d5db);
-		dirtyPlateGraphics.strokeCircle(16, 16, 14);
-		dirtyPlateGraphics.strokeCircle(16, 16, 10);
-		// 污渍
-		dirtyPlateGraphics.fillStyle(0x9ca3af);
-		dirtyPlateGraphics.fillCircle(12, 14, 2);
-		dirtyPlateGraphics.fillCircle(20, 18, 1);
-		dirtyPlateGraphics.fillCircle(18, 12, 1);
-		// 食物残渣
-		dirtyPlateGraphics.fillStyle(0x78716c);
-		dirtyPlateGraphics.fillCircle(14, 20, 1);
-		dirtyPlateGraphics.fillCircle(22, 14, 1);
-		dirtyPlateGraphics.generateTexture('dirty_plate', 32, 32);
-		dirtyPlateGraphics.destroy();
-
-		// 垃圾桶
+		// 创建垃圾桶图形
 		const trashGraphics = this.add.graphics();
-		trashGraphics.fillStyle(0x666666);
-		trashGraphics.fillRect(4, 8, 24, 24);
-		trashGraphics.fillStyle(0x333333);
-		trashGraphics.fillRect(2, 4, 28, 8);
-		// 垃圾桶标识
-		trashGraphics.fillStyle(0xffffff);
-		trashGraphics.fillRect(14, 16, 4, 8);
-		trashGraphics.fillRect(12, 18, 8, 4);
+		trashGraphics.fillStyle(0x696969);
+		trashGraphics.fillRect(8, 12, 16, 20);
+		trashGraphics.fillStyle(0x2f2f2f);
+		trashGraphics.fillRect(6, 8, 20, 4);
+		trashGraphics.fillStyle(0x808080);
+		trashGraphics.fillRect(10, 16, 12, 12);
 		trashGraphics.generateTexture('trash', 32, 32);
 		trashGraphics.destroy();
 
-		// 灭火器
+		// 创建灭火器图形
 		const extinguisherGraphics = this.add.graphics();
-		// 灭火器主体（红色圆柱）
-		extinguisherGraphics.fillStyle(0xdc2626); // 红色
+		extinguisherGraphics.fillStyle(0xff0000);
 		extinguisherGraphics.fillRect(12, 8, 8, 20);
-		// 灭火器顶部
-		extinguisherGraphics.fillStyle(0x374151); // 深灰色
-		extinguisherGraphics.fillRect(10, 6, 12, 4);
-		// 压力表
-		extinguisherGraphics.fillStyle(0xfbbf24); // 金色
-		extinguisherGraphics.fillCircle(16, 12, 2);
-		// 喷嘴
-		extinguisherGraphics.fillStyle(0x6b7280); // 灰色
-		extinguisherGraphics.fillRect(18, 10, 4, 2);
-		// 标签
-		extinguisherGraphics.fillStyle(0xffffff);
-		extinguisherGraphics.fillRect(13, 16, 6, 8);
 		extinguisherGraphics.fillStyle(0x000000);
-		extinguisherGraphics.fillRect(14, 18, 4, 2);
+		extinguisherGraphics.fillRect(14, 4, 4, 8);
+		extinguisherGraphics.fillStyle(0xc0c0c0);
+		extinguisherGraphics.fillRect(10, 26, 12, 4);
 		extinguisherGraphics.generateTexture('extinguisher', 32, 32);
 		extinguisherGraphics.destroy();
 
-		// 着火的烹饪台
+		// 创建脏盘子图形
+		const dirtyPlateGraphics = this.add.graphics();
+		dirtyPlateGraphics.fillStyle(0x8b7355);
+		dirtyPlateGraphics.fillCircle(16, 16, 14);
+		dirtyPlateGraphics.fillStyle(0x654321);
+		dirtyPlateGraphics.fillCircle(16, 16, 10);
+		// 添加污渍
+		dirtyPlateGraphics.fillStyle(0x4a4a4a);
+		dirtyPlateGraphics.fillCircle(12, 12, 2);
+		dirtyPlateGraphics.fillCircle(20, 14, 2);
+		dirtyPlateGraphics.fillCircle(16, 20, 2);
+		dirtyPlateGraphics.generateTexture('dirty_plate', 32, 32);
+		dirtyPlateGraphics.destroy();
+
+		// 创建干净盘子图形
+		const plateGraphics = this.add.graphics();
+		plateGraphics.fillStyle(0xf0f0f0);
+		plateGraphics.fillCircle(16, 16, 14);
+		plateGraphics.fillStyle(0xe0e0e0);
+		plateGraphics.fillCircle(16, 16, 10);
+		plateGraphics.generateTexture('plate', 32, 32);
+		plateGraphics.destroy();
+
+		// 创建装好的盘子图形
+		const preparedPlateGraphics = this.add.graphics();
+		preparedPlateGraphics.fillStyle(0xf0f0f0);
+		preparedPlateGraphics.fillCircle(16, 16, 14);
+		preparedPlateGraphics.fillStyle(0xe0e0e0);
+		preparedPlateGraphics.fillCircle(16, 16, 10);
+		// 添加食物装饰
+		preparedPlateGraphics.fillStyle(0x90ee90);
+		preparedPlateGraphics.fillCircle(12, 12, 3);
+		preparedPlateGraphics.fillStyle(0xff6347);
+		preparedPlateGraphics.fillCircle(20, 12, 3);
+		preparedPlateGraphics.generateTexture('prepared_plate', 32, 32);
+		preparedPlateGraphics.destroy();
+
+		// 创建着火烹饪台图形
 		const fireCookingStationGraphics = this.add.graphics();
-		// 炉灶基础
-		fireCookingStationGraphics.fillStyle(0x2c2c2c);
-		fireCookingStationGraphics.fillRect(0, 16, 64, 48);
-		fireCookingStationGraphics.fillStyle(0x404040);
-		fireCookingStationGraphics.fillRect(4, 20, 56, 40);
-
-		// 大火焰效果
-		fireCookingStationGraphics.fillStyle(0xff4444); // 红色火焰
-		fireCookingStationGraphics.fillCircle(20, 35, 12);
-		fireCookingStationGraphics.fillCircle(44, 35, 12);
-		fireCookingStationGraphics.fillStyle(0xff6b6b);
-		fireCookingStationGraphics.fillCircle(20, 30, 8);
-		fireCookingStationGraphics.fillCircle(44, 30, 8);
-		fireCookingStationGraphics.fillStyle(0xffa502); // 橙色火焰
-		fireCookingStationGraphics.fillCircle(20, 25, 6);
-		fireCookingStationGraphics.fillCircle(44, 25, 6);
-		fireCookingStationGraphics.fillStyle(0xffed4e); // 黄色火焰中心
-		fireCookingStationGraphics.fillCircle(20, 22, 4);
-		fireCookingStationGraphics.fillCircle(44, 22, 4);
-
-		// 烟雾效果
-		fireCookingStationGraphics.fillStyle(0x666666);
-		fireCookingStationGraphics.fillCircle(15, 15, 3);
-		fireCookingStationGraphics.fillCircle(25, 12, 2);
-		fireCookingStationGraphics.fillCircle(35, 14, 3);
-		fireCookingStationGraphics.fillCircle(45, 11, 2);
-
-		// 平底锅（烧焦状态）
-		fireCookingStationGraphics.fillStyle(0x1a1a1a); // 黑色
-		fireCookingStationGraphics.fillCircle(32, 40, 12);
-		fireCookingStationGraphics.fillStyle(0x0f0f0f);
-		fireCookingStationGraphics.fillCircle(32, 40, 10);
-
+		fireCookingStationGraphics.fillStyle(0x8b4513);
+		fireCookingStationGraphics.fillRect(4, 4, 56, 56);
+		fireCookingStationGraphics.fillStyle(0xff4500);
+		fireCookingStationGraphics.fillRect(8, 8, 48, 48);
+		// 添加火焰效果
+		fireCookingStationGraphics.fillStyle(0xff0000);
+		fireCookingStationGraphics.fillTriangle(16, 16, 24, 8, 32, 16);
+		fireCookingStationGraphics.fillTriangle(32, 16, 40, 8, 48, 16);
 		fireCookingStationGraphics.generateTexture('fire_cooking_station', 64, 64);
 		fireCookingStationGraphics.destroy();
+
+		// 创建粒子纹理
+		const particleGraphics = this.add.graphics();
+		particleGraphics.fillStyle(0xffd700);
+		particleGraphics.fillCircle(8, 8, 4);
+		particleGraphics.generateTexture('particle', 16, 16);
+		particleGraphics.destroy();
 	}
 
-	createUISprites() {
-		// 创建进度条纹理
-		const progressBarGraphics = this.add.graphics();
-		progressBarGraphics.fillStyle(0x333333);
-		progressBarGraphics.fillRect(0, 0, 60, 8);
-		progressBarGraphics.fillStyle(0x2ed573);
-		progressBarGraphics.fillRect(2, 2, 56, 4);
-		progressBarGraphics.generateTexture('progress_bar', 60, 8);
-		progressBarGraphics.destroy();
+	createCharacterAnimations() {
+		// 创建Edward角色动画
+		this.anims.create({
+			key: 'edward_walk_down',
+			frames: [
+				{ key: 'edward_down_0' },
+				{ key: 'edward_down_1' },
+				{ key: 'edward_down_2' },
+				{ key: 'edward_down_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
 
-		// 创建专门的粒子纹理（白色小点）
-		const particleGraphics = this.add.graphics();
-		particleGraphics.fillStyle(0xffffff);
-		particleGraphics.fillCircle(2, 2, 2);
-		particleGraphics.generateTexture('particle', 4, 4);
-		particleGraphics.destroy();
+		this.anims.create({
+			key: 'edward_walk_up',
+			frames: [
+				{ key: 'edward_up_0' },
+				{ key: 'edward_up_1' },
+				{ key: 'edward_up_2' },
+				{ key: 'edward_up_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_left',
+			frames: [
+				{ key: 'edward_left_0' },
+				{ key: 'edward_left_1' },
+				{ key: 'edward_left_2' },
+				{ key: 'edward_left_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_walk_right',
+			frames: [
+				{ key: 'edward_right_0' },
+				{ key: 'edward_right_1' },
+				{ key: 'edward_right_2' },
+				{ key: 'edward_right_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_down',
+			frames: [{ key: 'edward_down_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_up',
+			frames: [{ key: 'edward_up_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_left',
+			frames: [{ key: 'edward_left_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'edward_idle_right',
+			frames: [{ key: 'edward_right_0' }],
+			frameRate: 1,
+		});
+
+		// 创建Abby角色动画
+		this.anims.create({
+			key: 'abby_walk_down',
+			frames: [
+				{ key: 'abby_down_0' },
+				{ key: 'abby_down_1' },
+				{ key: 'abby_down_2' },
+				{ key: 'abby_down_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_up',
+			frames: [
+				{ key: 'abby_up_0' },
+				{ key: 'abby_up_1' },
+				{ key: 'abby_up_2' },
+				{ key: 'abby_up_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_left',
+			frames: [
+				{ key: 'abby_left_0' },
+				{ key: 'abby_left_1' },
+				{ key: 'abby_left_2' },
+				{ key: 'abby_left_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_walk_right',
+			frames: [
+				{ key: 'abby_right_0' },
+				{ key: 'abby_right_1' },
+				{ key: 'abby_right_2' },
+				{ key: 'abby_right_3' },
+			],
+			frameRate: 8,
+			repeat: -1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_down',
+			frames: [{ key: 'abby_down_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_up',
+			frames: [{ key: 'abby_up_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_left',
+			frames: [{ key: 'abby_left_0' }],
+			frameRate: 1,
+		});
+
+		this.anims.create({
+			key: 'abby_idle_right',
+			frames: [{ key: 'abby_right_0' }],
+			frameRate: 1,
+		});
 	}
 
 	create() {
@@ -652,6 +541,9 @@ export default class GameScene extends Phaser.Scene {
 			this.orderTimer.remove();
 			this.orderTimer = null;
 		}
+
+		// 创建角色动画
+		this.createCharacterAnimations();
 
 		// 检查游戏模式
 		this.gameMode = this.gameMode || 'single';
@@ -686,13 +578,17 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	initSinglePlayerGame() {
-		// 创建单人玩家（男性厨师）
-		this.player = this.physics.add.sprite(100, 300, 'chef_male');
+		// 创建单人玩家（Edward）
+		this.player = this.physics.add.sprite(100, 300, 'edward_down_0');
 		this.player.setCollideWorldBounds(true);
 		this.player.setDepth(10);
 		this.player.setSize(24, 32);
 		this.player.setData('playerId', 'single_player');
-		this.player.setData('playerType', 'male');
+		this.player.setData('playerType', 'edward');
+		this.player.setData('currentDirection', 'down');
+
+		// 播放默认待机动画
+		this.player.play('edward_idle_down');
 	}
 
 	initMultiplayerGame() {
@@ -712,8 +608,9 @@ export default class GameScene extends Phaser.Scene {
 			// 为每个玩家创建角色
 			roomData.players.forEach((playerData, index) => {
 				const isCurrentPlayer = playerData.playerId === this.currentPlayerId;
-				const playerType = index === 0 ? 'male' : 'female'; // 第一个玩家是男性，第二个是女性
-				const texture = playerType === 'male' ? 'chef_male' : 'chef_female';
+				const playerType = index === 0 ? 'edward' : 'abby'; // 第一个玩家是Edward，第二个是Abby
+				const texture =
+					playerType === 'edward' ? 'edward_down_0' : 'abby_down_0';
 
 				// 设置初始位置（如果没有位置信息）
 				const startX = playerData.position?.x || 100 + index * 100;
@@ -735,6 +632,10 @@ export default class GameScene extends Phaser.Scene {
 					this.player.setSize(24, 32);
 					this.player.setData('playerId', playerData.playerId);
 					this.player.setData('playerType', playerType);
+					this.player.setData('currentDirection', 'down');
+
+					// 播放默认待机动画
+					this.player.play(`${playerType}_idle_down`);
 
 					currentPlayerCreated = true;
 					console.log('当前玩家创建完成:', this.player);
@@ -746,6 +647,10 @@ export default class GameScene extends Phaser.Scene {
 					otherPlayer.setSize(24, 32);
 					otherPlayer.setData('playerId', playerData.playerId);
 					otherPlayer.setData('playerType', playerType);
+					otherPlayer.setData('currentDirection', 'down');
+
+					// 播放默认待机动画
+					otherPlayer.play(`${playerType}_idle_down`);
 
 					// 添加玩家名称标签
 					const nameText = this.add.text(
@@ -762,11 +667,24 @@ export default class GameScene extends Phaser.Scene {
 					nameText.setOrigin(0.5);
 					nameText.setDepth(11);
 
-					this.otherPlayers.set(playerData.playerId, {
+					const otherPlayerObj = {
 						sprite: otherPlayer,
 						nameText: nameText,
 						data: playerData,
-					});
+						holdingSprite: null, // 初始化手持物品精灵
+					};
+
+					this.otherPlayers.set(playerData.playerId, otherPlayerObj);
+
+					// 为新玩家设置墙壁碰撞
+					if (this.walls) {
+						this.physics.add.collider(otherPlayer, this.walls);
+					}
+
+					// 如果玩家有手持物品，立即显示
+					if (playerData.holding) {
+						this.updateOtherPlayerHolding(otherPlayerObj, playerData.holding);
+					}
 
 					console.log('其他玩家创建完成:', {
 						playerId: playerData.playerId,
@@ -782,12 +700,16 @@ export default class GameScene extends Phaser.Scene {
 			console.warn('⚠️ 当前玩家未在房间数据中找到，创建默认玩家');
 
 			// 创建默认的当前玩家
-			this.player = this.physics.add.sprite(100, 300, 'chef_male');
+			this.player = this.physics.add.sprite(100, 300, 'edward_down_0');
 			this.player.setCollideWorldBounds(true);
 			this.player.setDepth(10);
 			this.player.setSize(24, 32);
 			this.player.setData('playerId', this.currentPlayerId || 'default_player');
-			this.player.setData('playerType', 'male');
+			this.player.setData('playerType', 'edward');
+			this.player.setData('currentDirection', 'down');
+
+			// 播放默认待机动画
+			this.player.play('edward_idle_down');
 
 			console.log('默认当前玩家创建完成:', this.player);
 		}
@@ -1098,8 +1020,8 @@ export default class GameScene extends Phaser.Scene {
 		const actualIndex = roomData.players.findIndex(
 			(p) => p.playerId === playerData.playerId
 		);
-		const playerType = actualIndex === 0 ? 'male' : 'female';
-		const texture = playerType === 'male' ? 'chef_male' : 'chef_female';
+		const playerType = actualIndex === 0 ? 'edward' : 'abby';
+		const texture = playerType === 'edward' ? 'edward_down_0' : 'abby_down_0';
 
 		const startX = playerData.position?.x || 100 + actualIndex * 100;
 		const startY = playerData.position?.y || 300;
@@ -1121,6 +1043,7 @@ export default class GameScene extends Phaser.Scene {
 		otherPlayer.setSize(24, 32);
 		otherPlayer.setData('playerId', playerData.playerId);
 		otherPlayer.setData('playerType', playerType);
+		otherPlayer.setData('currentDirection', 'down');
 
 		// 添加玩家名称标签
 		const nameText = this.add.text(
@@ -1145,6 +1068,11 @@ export default class GameScene extends Phaser.Scene {
 		};
 
 		this.otherPlayers.set(playerData.playerId, otherPlayerObj);
+
+		// 为新玩家设置墙壁碰撞
+		if (this.walls) {
+			this.physics.add.collider(otherPlayer, this.walls);
+		}
 
 		// 如果玩家有手持物品，立即显示
 		if (playerData.holding) {
@@ -1558,7 +1486,14 @@ export default class GameScene extends Phaser.Scene {
 			);
 			groundItem.setData('type', itemData.type);
 			groundItem.setData('contents', itemData.contents);
-			groundItem.setSize(28, 28);
+
+			// 根据物品类型设置不同的尺寸
+			if (itemData.type.includes('plate')) {
+				groundItem.setSize(40, 40); // 盘子类型物品
+				groundItem.setScale(1.3);
+			} else {
+				groundItem.setSize(28, 28); // 普通物品
+			}
 
 			// 更新ID映射
 			this.groundItemIdMap.set(groundItem, itemData.id);
@@ -1951,6 +1886,9 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	createGameObjects() {
+		// 先创建墙壁组，确保createKitchenLayout中的createBoundaryWalls可以使用
+		this.walls = this.physics.add.staticGroup();
+
 		// 创建食材组
 		this.ingredients = this.physics.add.staticGroup();
 		this.createIngredients();
@@ -1974,17 +1912,27 @@ export default class GameScene extends Phaser.Scene {
 			.setData('type', 'wash')
 			.setData('isWashing', false);
 
-		// 创建垃圾桶
+		// 创建垃圾桶 - 调大尺寸
 		this.trash = this.physics.add.staticGroup();
-		this.trash.create(700, 500, 'trash').setSize(32, 32);
+		this.trash.create(700, 500, 'trash').setSize(48, 48).setScale(1.5);
 
-		// 创建灭火器 - 全局只有一个
+		// 创建灭火器 - 调大尺寸
 		this.extinguisher = this.physics.add.staticGroup();
-		this.extinguisher.create(650, 350, 'extinguisher').setSize(32, 32);
+		this.extinguisher
+			.create(650, 350, 'extinguisher')
+			.setSize(48, 48)
+			.setScale(1.5);
+
+		// 创建内部墙壁障碍物
+		this.createWallObstacles();
+
+		// 创建边界墙壁碰撞体
+		this.createBoundaryWalls();
 
 		console.log('🧯 创建灭火器:', {
 			position: { x: 650, y: 350 },
 			count: 1,
+			scale: 1.5,
 		});
 	}
 
@@ -2063,11 +2011,12 @@ export default class GameScene extends Phaser.Scene {
 		];
 
 		platePositions.forEach((pos, index) => {
-			const plate = this.plates.create(pos.x, pos.y, 'plate');
+			const plate = this.plates.create(pos.x, pos.y, 'plate_sprite');
 			plate.setData('contents', []);
 			plate.setData('plateType', 'clean'); // 设置为干净盘子
 			plate.setData('originalPosition', { x: pos.x, y: pos.y }); // 记录原始位置
-			plate.setSize(28, 28);
+			plate.setSize(40, 40); // 调大盘子碰撞尺寸
+			plate.setScale(1.3); // 调大盘子显示尺寸
 
 			// 为每个盘子分配唯一且固定的ID
 			const plateId = `plate_${index}`;
@@ -2081,6 +2030,7 @@ export default class GameScene extends Phaser.Scene {
 				position: pos,
 				plateType: 'clean',
 				poolSize: this.platePool.length,
+				scale: 1.3,
 			});
 
 			// 在多人游戏模式下，初始化盘子状态到服务器
@@ -2098,7 +2048,99 @@ export default class GameScene extends Phaser.Scene {
 		});
 	}
 
+	createWallObstacles() {
+		// 根据用户指定位置添加墙壁障碍物
+		const wallPositions = [
+			// 左下角洗碗槽附近的水平墙壁
+			{ x: 80, y: 350, width: 200, height: 20 }, // 水平墙壁
+
+			// 中下部盘子区域附近的垂直墙壁
+			{ x: 260, y: 450, width: 20, height: 80 }, // 垂直墙壁
+		];
+
+		wallPositions.forEach((wallConfig, index) => {
+			// 创建墙壁图形
+			const wall = this.walls.create(
+				wallConfig.x + wallConfig.width / 2, // 中心点X
+				wallConfig.y + wallConfig.height / 2, // 中心点Y
+				'wall_tile' // 使用墙壁纹理
+			);
+
+			// 设置墙壁尺寸和碰撞体
+			wall.setSize(wallConfig.width, wallConfig.height);
+			wall.setDisplaySize(wallConfig.width, wallConfig.height);
+			wall.setData('type', 'wall');
+			wall.setData('id', `wall_${index}`);
+			wall.setDepth(1); // 设置墙壁在地板之上，但在其他对象之下
+
+			console.log('🧱 创建墙壁障碍物:', {
+				id: `wall_${index}`,
+				position: {
+					x: wallConfig.x + wallConfig.width / 2,
+					y: wallConfig.y + wallConfig.height / 2,
+				},
+				size: { width: wallConfig.width, height: wallConfig.height },
+			});
+		});
+
+		console.log('🧱 墙壁障碍物创建完成:', {
+			totalWalls: wallPositions.length,
+		});
+	}
+
+	createBoundaryWalls() {
+		// 创建四周边界墙壁的碰撞体
+		const boundaryWalls = [
+			// 上边界
+			{ x: 400, y: 32, width: 800, height: 64 },
+			// 下边界
+			{ x: 400, y: 568, width: 800, height: 64 },
+			// 左边界
+			{ x: 32, y: 300, width: 64, height: 600 },
+			// 右边界
+			{ x: 768, y: 300, width: 64, height: 600 },
+		];
+
+		boundaryWalls.forEach((boundaryConfig, index) => {
+			// 创建不可见的边界墙壁碰撞体
+			const boundaryWall = this.walls.create(
+				boundaryConfig.x, // 中心点X
+				boundaryConfig.y, // 中心点Y
+				null // 不使用纹理，创建不可见碰撞体
+			);
+
+			// 设置边界墙壁尺寸和碰撞体
+			boundaryWall.setSize(boundaryConfig.width, boundaryConfig.height);
+			boundaryWall.setData('type', 'boundary_wall');
+			boundaryWall.setData('id', `boundary_${index}`);
+			boundaryWall.setVisible(false); // 设置为不可见，只用于碰撞检测
+			boundaryWall.setDepth(-10); // 设置较低的深度
+
+			console.log('🧱 创建边界墙壁:', {
+				id: `boundary_${index}`,
+				position: { x: boundaryConfig.x, y: boundaryConfig.y },
+				size: { width: boundaryConfig.width, height: boundaryConfig.height },
+			});
+		});
+
+		console.log('🧱 边界墙壁创建完成:', {
+			totalBoundaryWalls: boundaryWalls.length,
+		});
+	}
+
 	setupCollisions() {
+		// 设置玩家与墙壁的碰撞
+		this.physics.add.collider(this.player, this.walls);
+
+		// 设置其他玩家与墙壁的碰撞（多人游戏）
+		if (this.gameMode === 'multiplayer') {
+			this.otherPlayers.forEach((otherPlayerData) => {
+				if (otherPlayerData.sprite) {
+					this.physics.add.collider(otherPlayerData.sprite, this.walls);
+				}
+			});
+		}
+
 		// 设置重叠检测
 		this.physics.add.overlap(
 			this.player,
@@ -2401,27 +2443,47 @@ export default class GameScene extends Phaser.Scene {
 		const speed = this.gameConfig.playerSpeed;
 		let velocityX = 0;
 		let velocityY = 0;
+		let direction = null;
 
 		// 处理移动输入
 		if (this.cursors.left.isDown || this.wasdKeys.A.isDown) {
 			velocityX = -speed;
+			direction = 'left';
 		} else if (this.cursors.right.isDown || this.wasdKeys.D.isDown) {
 			velocityX = speed;
+			direction = 'right';
 		}
 
 		if (this.cursors.up.isDown || this.wasdKeys.W.isDown) {
 			velocityY = -speed;
+			direction = 'up';
 		} else if (this.cursors.down.isDown || this.wasdKeys.S.isDown) {
 			velocityY = speed;
+			direction = 'down';
 		}
 
 		this.player.setVelocity(velocityX, velocityY);
 
-		// 简单的行走动画效果
-		if (velocityX !== 0 || velocityY !== 0) {
-			this.player.setTint(0xf0f0f0);
+		// 处理角色动画
+		const playerType = this.player.getData('playerType');
+		const currentDirection = this.player.getData('currentDirection');
+		const isMoving = velocityX !== 0 || velocityY !== 0;
+
+		if (isMoving && direction) {
+			// 播放行走动画
+			if (currentDirection !== direction) {
+				this.player.setData('currentDirection', direction);
+				this.player.play(`${playerType}_walk_${direction}`);
+			}
 		} else {
-			this.player.clearTint();
+			// 播放待机动画
+			const idleDirection = currentDirection || 'down';
+			if (
+				!this.player.anims.currentAnim ||
+				this.player.anims.currentAnim.key.includes('walk')
+			) {
+				this.player.play(`${playerType}_idle_${idleDirection}`);
+			}
 		}
 	}
 
@@ -3232,12 +3294,14 @@ export default class GameScene extends Phaser.Scene {
 						// 如果没有保存的对象引用，创建新的灭火器（向后兼容）
 						const newExtinguisher = this.extinguisher
 							.create(playerX, playerY, 'extinguisher')
-							.setSize(32, 32);
+							.setSize(48, 48)
+							.setScale(1.5);
 
 						console.log('🧯 创建新灭火器（向后兼容）:', {
 							position: { x: playerX, y: playerY },
 							visible: true,
 							active: true,
+							scale: 1.5,
 						});
 
 						// 多人游戏：同步灭火器状态（新创建）
@@ -3261,7 +3325,8 @@ export default class GameScene extends Phaser.Scene {
 					);
 					groundItem.setData('type', 'prepared_plate');
 					groundItem.setData('contents', this.playerHolding.contents);
-					groundItem.setSize(28, 28);
+					groundItem.setSize(40, 40); // 调大盘子碰撞尺寸
+					groundItem.setScale(1.3); // 调大盘子显示尺寸
 
 					const contentsDisplay = this.playerHolding.contents
 						.map((item) => this.getItemDisplayName(item))
@@ -3275,7 +3340,14 @@ export default class GameScene extends Phaser.Scene {
 						this.playerHolding.type
 					);
 					groundItem.setData('type', this.playerHolding.type);
-					groundItem.setSize(28, 28);
+
+					// 根据物品类型设置不同的尺寸
+					if (this.playerHolding.type.includes('plate')) {
+						groundItem.setSize(40, 40); // 盘子类型物品
+						groundItem.setScale(1.3);
+					} else {
+						groundItem.setSize(28, 28); // 普通物品
+					}
 
 					// 如果是装好的盘子，保存内容
 					if (this.playerHolding.contents) {
@@ -3408,6 +3480,7 @@ export default class GameScene extends Phaser.Scene {
 			...this.trash.children.entries,
 			...this.groundItems.children.entries,
 			...this.extinguisher.children.entries, // 添加灭火器对象
+			...this.walls.children.entries, // 添加墙壁对象
 		];
 
 		for (const obj of allObjects) {
@@ -3420,7 +3493,12 @@ export default class GameScene extends Phaser.Scene {
 				continue;
 			}
 
-			if (Phaser.Math.Distance.Between(x, y, obj.x, obj.y) < minDistance) {
+			// 对于墙壁，使用更严格的距离检查
+			const distance = this.walls.children.entries.includes(obj)
+				? 40
+				: minDistance;
+
+			if (Phaser.Math.Distance.Between(x, y, obj.x, obj.y) < distance) {
 				return false;
 			}
 		}
@@ -3782,7 +3860,8 @@ export default class GameScene extends Phaser.Scene {
 
 			cleanPlate.setData('plateId', plateId); // 保持相同的ID
 			cleanPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
-			cleanPlate.setSize(28, 28);
+			cleanPlate.setSize(40, 40); // 调大盘子碰撞尺寸
+			cleanPlate.setScale(1.3); // 调大盘子显示尺寸
 			cleanPlate.setVisible(true);
 			cleanPlate.setActive(true);
 
@@ -3915,7 +3994,8 @@ export default class GameScene extends Phaser.Scene {
 				const plate = this.plates.create(x, y, plateTexture);
 				plate.setData('contents', []);
 				plate.setData('plateType', plateType);
-				plate.setSize(28, 28);
+				plate.setSize(40, 40); // 调大盘子碰撞尺寸
+				plate.setScale(1.3); // 调大盘子显示尺寸
 
 				console.log('🍽️ 创建新盘子（向后兼容）:', {
 					position: { x, y },
@@ -3966,17 +4046,19 @@ export default class GameScene extends Phaser.Scene {
 				} else {
 					console.warn('⚠️ 找不到对应的盘子，创建新盘子');
 					// 如果找不到对应的盘子，创建新盘子（向后兼容）
-					const plate = this.plates.create(x, y, 'plate');
+					const plate = this.plates.create(x, y, 'plate_sprite');
 					plate.setData('contents', [...this.playerHolding.contents]);
 					plate.setData('plateType', 'clean');
-					plate.setSize(28, 28);
+					plate.setSize(40, 40); // 调大盘子碰撞尺寸
+					plate.setScale(1.3); // 调大盘子显示尺寸
 				}
 			} else {
 				// 如果没有plateId，创建新盘子（向后兼容）
-				const plate = this.plates.create(x, y, 'plate');
+				const plate = this.plates.create(x, y, 'plate_sprite');
 				plate.setData('contents', [...this.playerHolding.contents]);
 				plate.setData('plateType', 'clean');
-				plate.setSize(28, 28);
+				plate.setSize(40, 40); // 调大盘子碰撞尺寸
+				plate.setScale(1.3); // 调大盘子显示尺寸
 
 				console.log('🍽️ 创建新装好的盘子（向后兼容）:', {
 					position: { x, y },
@@ -4491,7 +4573,8 @@ export default class GameScene extends Phaser.Scene {
 			dirtyPlate.setData('plateType', 'dirty');
 			dirtyPlate.setData('plateId', plateId); // 保持相同的ID
 			dirtyPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
-			dirtyPlate.setSize(28, 28);
+			dirtyPlate.setSize(40, 40); // 调大盘子碰撞尺寸
+			dirtyPlate.setScale(1.3); // 调大盘子显示尺寸
 			dirtyPlate.setVisible(true);
 			dirtyPlate.setActive(true);
 
