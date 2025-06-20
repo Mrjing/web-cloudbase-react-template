@@ -1,5 +1,50 @@
 import Phaser from 'phaser';
 import multiplayerManager from '../utils/multiplayerManager';
+import floor_tile_img from '../assets/floor/floor.png';
+import wall_tile_img from '../assets/wall/wall.png';
+
+// Edward角色动画帧
+import edward_down_0_img from '../assets/character/Edward/Edward-down-0.png';
+import edward_down_1_img from '../assets/character/Edward/Edward-down-1.png';
+import edward_down_2_img from '../assets/character/Edward/Edward-down-2.png';
+import edward_down_3_img from '../assets/character/Edward/Edward-down-3.png';
+import edward_up_0_img from '../assets/character/Edward/Edward-up-0.png';
+import edward_up_1_img from '../assets/character/Edward/Edward-up-1.png';
+import edward_up_2_img from '../assets/character/Edward/Edward-up-2.png';
+import edward_up_3_img from '../assets/character/Edward/Edward-up-3.png';
+import edward_left_0_img from '../assets/character/Edward/Edward-left-0.png';
+import edward_left_1_img from '../assets/character/Edward/Edward-left-1.png';
+import edward_left_2_img from '../assets/character/Edward/Edward-left-2.png';
+import edward_left_3_img from '../assets/character/Edward/Edward-left-3.png';
+import edward_right_0_img from '../assets/character/Edward/Edward-right-0.png';
+import edward_right_1_img from '../assets/character/Edward/Edward-right-1.png';
+import edward_right_2_img from '../assets/character/Edward/Edward-right-2.png';
+import edward_right_3_img from '../assets/character/Edward/Edward-right-3.png';
+
+// Abby角色动画帧
+import abby_down_0_img from '../assets/character/Abby/Abby-down-0.png';
+import abby_down_1_img from '../assets/character/Abby/Abby-down-1.png';
+import abby_down_2_img from '../assets/character/Abby/Abby-down-2.png';
+import abby_down_3_img from '../assets/character/Abby/Abby-down-3.png';
+import abby_up_0_img from '../assets/character/Abby/Abby-up-0.png';
+import abby_up_1_img from '../assets/character/Abby/Abby-up-1.png';
+import abby_up_2_img from '../assets/character/Abby/Abby-up-2.png';
+import abby_up_3_img from '../assets/character/Abby/Abby-up-3.png';
+import abby_left_0_img from '../assets/character/Abby/Abby-left-0.png';
+import abby_left_1_img from '../assets/character/Abby/Abby-left-1.png';
+import abby_left_2_img from '../assets/character/Abby/Abby-left-2.png';
+import abby_left_3_img from '../assets/character/Abby/Abby-left-3.png';
+import abby_right_0_img from '../assets/character/Abby/Abby-right-0.png';
+import abby_right_1_img from '../assets/character/Abby/Abby-right-1.png';
+import abby_right_2_img from '../assets/character/Abby/Abby-right-2.png';
+import abby_right_3_img from '../assets/character/Abby/Abby-right-3.png';
+
+// 工作台和物品资源
+import cutting_station_img from '../assets/item/切菜台.png';
+import cooking_station_img from '../assets/item/烹饪台.png';
+import serving_station_img from '../assets/item/出餐台.png';
+import wash_station_img from '../assets/item/洗碗台.png';
+import plate_sprite_img from '../assets/item/盘子.png';
 
 export default class GameScene extends Phaser.Scene {
 	constructor() {
@@ -109,111 +154,51 @@ export default class GameScene extends Phaser.Scene {
 
 	preload() {
 		// 加载地板和墙壁资源
-		this.load.image('floor_tile', 'src/assets/floor/floor.png');
-		this.load.image('wall_tile', 'src/assets/wall/wall.png');
+		this.load.image('floor_tile', floor_tile_img);
+		this.load.image('wall_tile', wall_tile_img);
 
 		// 加载Edward角色动画帧
-		this.load.image(
-			'edward_down_0',
-			'src/assets/character/Edward/Edward-down-0.png'
-		);
-		this.load.image(
-			'edward_down_1',
-			'src/assets/character/Edward/Edward-down-1.png'
-		);
-		this.load.image(
-			'edward_down_2',
-			'src/assets/character/Edward/Edward-down-2.png'
-		);
-		this.load.image(
-			'edward_down_3',
-			'src/assets/character/Edward/Edward-down-3.png'
-		);
-		this.load.image(
-			'edward_up_0',
-			'src/assets/character/Edward/Edward-up-0.png'
-		);
-		this.load.image(
-			'edward_up_1',
-			'src/assets/character/Edward/Edward-up-1.png'
-		);
-		this.load.image(
-			'edward_up_2',
-			'src/assets/character/Edward/Edward-up-2.png'
-		);
-		this.load.image(
-			'edward_up_3',
-			'src/assets/character/Edward/Edward-up-3.png'
-		);
-		this.load.image(
-			'edward_left_0',
-			'src/assets/character/Edward/Edward-left-0.png'
-		);
-		this.load.image(
-			'edward_left_1',
-			'src/assets/character/Edward/Edward-left-1.png'
-		);
-		this.load.image(
-			'edward_left_2',
-			'src/assets/character/Edward/Edward-left-2.png'
-		);
-		this.load.image(
-			'edward_left_3',
-			'src/assets/character/Edward/Edward-left-3.png'
-		);
-		this.load.image(
-			'edward_right_0',
-			'src/assets/character/Edward/Edward-right-0.png'
-		);
-		this.load.image(
-			'edward_right_1',
-			'src/assets/character/Edward/Edward-right-1.png'
-		);
-		this.load.image(
-			'edward_right_2',
-			'src/assets/character/Edward/Edward-right-2.png'
-		);
-		this.load.image(
-			'edward_right_3',
-			'src/assets/character/Edward/Edward-right-3.png'
-		);
+		this.load.image('edward_down_0', edward_down_0_img);
+		this.load.image('edward_down_1', edward_down_1_img);
+		this.load.image('edward_down_2', edward_down_2_img);
+		this.load.image('edward_down_3', edward_down_3_img);
+		this.load.image('edward_up_0', edward_up_0_img);
+		this.load.image('edward_up_1', edward_up_1_img);
+		this.load.image('edward_up_2', edward_up_2_img);
+		this.load.image('edward_up_3', edward_up_3_img);
+		this.load.image('edward_left_0', edward_left_0_img);
+		this.load.image('edward_left_1', edward_left_1_img);
+		this.load.image('edward_left_2', edward_left_2_img);
+		this.load.image('edward_left_3', edward_left_3_img);
+		this.load.image('edward_right_0', edward_right_0_img);
+		this.load.image('edward_right_1', edward_right_1_img);
+		this.load.image('edward_right_2', edward_right_2_img);
+		this.load.image('edward_right_3', edward_right_3_img);
 
 		// 加载Abby角色动画帧
-		this.load.image('abby_down_0', 'src/assets/character/Abby/Abby-down-0.png');
-		this.load.image('abby_down_1', 'src/assets/character/Abby/Abby-down-1.png');
-		this.load.image('abby_down_2', 'src/assets/character/Abby/Abby-down-2.png');
-		this.load.image('abby_down_3', 'src/assets/character/Abby/Abby-down-3.png');
-		this.load.image('abby_up_0', 'src/assets/character/Abby/Abby-up-0.png');
-		this.load.image('abby_up_1', 'src/assets/character/Abby/Abby-up-1.png');
-		this.load.image('abby_up_2', 'src/assets/character/Abby/Abby-up-2.png');
-		this.load.image('abby_up_3', 'src/assets/character/Abby/Abby-up-3.png');
-		this.load.image('abby_left_0', 'src/assets/character/Abby/Abby-left-0.png');
-		this.load.image('abby_left_1', 'src/assets/character/Abby/Abby-left-1.png');
-		this.load.image('abby_left_2', 'src/assets/character/Abby/Abby-left-2.png');
-		this.load.image('abby_left_3', 'src/assets/character/Abby/Abby-left-3.png');
-		this.load.image(
-			'abby_right_0',
-			'src/assets/character/Abby/Abby-right-0.png'
-		);
-		this.load.image(
-			'abby_right_1',
-			'src/assets/character/Abby/Abby-right-1.png'
-		);
-		this.load.image(
-			'abby_right_2',
-			'src/assets/character/Abby/Abby-right-2.png'
-		);
-		this.load.image(
-			'abby_right_3',
-			'src/assets/character/Abby/Abby-right-3.png'
-		);
+		this.load.image('abby_down_0', abby_down_0_img);
+		this.load.image('abby_down_1', abby_down_1_img);
+		this.load.image('abby_down_2', abby_down_2_img);
+		this.load.image('abby_down_3', abby_down_3_img);
+		this.load.image('abby_up_0', abby_up_0_img);
+		this.load.image('abby_up_1', abby_up_1_img);
+		this.load.image('abby_up_2', abby_up_2_img);
+		this.load.image('abby_up_3', abby_up_3_img);
+		this.load.image('abby_left_0', abby_left_0_img);
+		this.load.image('abby_left_1', abby_left_1_img);
+		this.load.image('abby_left_2', abby_left_2_img);
+		this.load.image('abby_left_3', abby_left_3_img);
+		this.load.image('abby_right_0', abby_right_0_img);
+		this.load.image('abby_right_1', abby_right_1_img);
+		this.load.image('abby_right_2', abby_right_2_img);
+		this.load.image('abby_right_3', abby_right_3_img);
 
 		// 加载工作台和物品资源
-		this.load.image('cutting_station', 'src/assets/item/切菜台.png');
-		this.load.image('cooking_station', 'src/assets/item/烹饪台.png');
-		this.load.image('serving_station', 'src/assets/item/出餐台.png');
-		this.load.image('wash_station', 'src/assets/item/洗碗台.png');
-		this.load.image('plate_sprite', 'src/assets/item/盘子.png');
+		this.load.image('cutting_station', cutting_station_img);
+		this.load.image('cooking_station', cooking_station_img);
+		this.load.image('serving_station', serving_station_img);
+		this.load.image('wash_station', wash_station_img);
+		this.load.image('plate_sprite', plate_sprite_img);
 
 		// 创建食材和其他物品的像素艺术图形
 		this.createPixelArt();
