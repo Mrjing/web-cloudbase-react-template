@@ -611,6 +611,27 @@ class MultiplayerManager {
 		}
 	}
 
+	// 结束游戏
+	async endGame(finalScore) {
+		try {
+			if (!this.roomId) return;
+
+			const result = await cloudbase.callFunction({
+				name: 'gameSync',
+				data: {
+					action: 'endGame',
+					roomId: this.roomId,
+					finalScore,
+				},
+			});
+
+			return result.result;
+		} catch (error) {
+			console.error('结束游戏失败:', error);
+			return { success: false, error: error.message };
+		}
+	}
+
 	// 事件监听
 	on(event, callback) {
 		if (!this.listeners.has(event)) {

@@ -303,7 +303,7 @@ export default class GameScene extends Phaser.Scene {
 
 		// 创建脏盘子图形
 		const dirtyPlateGraphics = this.add.graphics();
-		dirtyPlateGraphics.fillStyle(0x8b7355);
+		dirtyPlateGraphics.fillStyle(0x8b4513);
 		dirtyPlateGraphics.fillCircle(16, 16, 14);
 		dirtyPlateGraphics.fillStyle(0x654321);
 		dirtyPlateGraphics.fillCircle(16, 16, 10);
@@ -962,10 +962,16 @@ export default class GameScene extends Phaser.Scene {
 		// 如果玩家手持物品，在角色旁边显示
 		if (holdingData && holdingData.type) {
 			try {
+				// 🔧 修复：确保使用正确的纹理名称
+				let textureKey = holdingData.type;
+				if (textureKey === 'plate') {
+					textureKey = 'plate_sprite'; // 使用plate_sprite纹理而不是不存在的plate纹理
+				}
+
 				otherPlayer.holdingSprite = this.add.sprite(
 					otherPlayer.sprite.x + 20,
 					otherPlayer.sprite.y - 10,
-					holdingData.type
+					textureKey
 				);
 				otherPlayer.holdingSprite.setScale(0.6);
 				otherPlayer.holdingSprite.setDepth(15);
@@ -1369,7 +1375,7 @@ export default class GameScene extends Phaser.Scene {
 					if (plateType === 'dirty') {
 						localPlate.setTexture('dirty_plate');
 					} else {
-						localPlate.setTexture('plate');
+						localPlate.setTexture('plate_sprite'); // 🔧 修复：使用正确的纹理
 					}
 
 					// 如果服务器有ID，确保本地盘子也有相同的ID
@@ -1950,6 +1956,9 @@ export default class GameScene extends Phaser.Scene {
 		this.gameStarted = true;
 		this.gameEnded = false;
 
+		// 🏆 记录游戏开始时间，用于计算游戏时长
+		this.gameStartTime = Date.now();
+
 		if (this.gameMode === 'multiplayer') {
 			// 多人游戏模式：从服务器获取游戏状态
 			const gameState = multiplayerManager.getGameState();
@@ -2421,6 +2430,243 @@ export default class GameScene extends Phaser.Scene {
 		}
 	}
 
+	// 游戏结束处理
+	gameOver() {
+		if (this.gameEnded) return;
+
+		this.gameEnded = true;
+
+		// 停止计时器
+		if (this.gameTimer) {
+			this.gameTimer.remove();
+			this.gameTimer = null;
+		}
+
+		// 停止订单计时器
+		if (this.orderTimer) {
+			this.orderTimer.remove();
+			this.orderTimer = null;
+		}
+
+		// 显示游戏结束信息
+		const finalScore = this.score;
+		const completedOrders = this.completedOrders;
+
+		// 创建游戏结束弹窗
+		this.showGameOverModal(finalScore, completedOrders);
+
+		// 多人游戏：通知服务器游戏结束
+		if (this.gameMode === 'multiplayer') {
+			this.endMultiplayerGame(finalScore);
+		}
+
+		console.log('🎮 游戏结束:', {
+			finalScore,
+			completedOrders,
+			gameMode: this.gameMode,
+		});
+	}
+
+	// 显示游戏结束弹窗
+	showGameOverModal(finalScore, completedOrders) {
+		// 🏆 更新排行榜数据
+		this.updateLeaderboard(finalScore, completedOrders);
+
+		// 创建半透明背景
+		const overlay = this.add.graphics();
+		overlay.fillStyle(0x000000, 0.7);
+		overlay.fillRect(0, 0, 800, 600);
+		overlay.setDepth(100);
+
+		// 创建弹窗背景
+		const modalBg = this.add.graphics();
+		modalBg.fillStyle(0x2c3e50);
+		modalBg.lineStyle(4, 0x3498db);
+		modalBg.fillRoundedRect(200, 150, 400, 300, 10);
+		modalBg.strokeRoundedRect(200, 150, 400, 300, 10);
+		modalBg.setDepth(101);
+
+		// 游戏结束标题
+		const titleText = this.add.text(400, 200, '🎮 游戏结束！', {
+			fontSize: '32px',
+			fontFamily: 'Arial',
+			color: '#e74c3c',
+			align: 'center',
+		});
+		titleText.setOrigin(0.5);
+		titleText.setDepth(102);
+
+		// 最终得分
+		const scoreText = this.add.text(400, 260, `最终得分: ${finalScore}`, {
+			fontSize: '24px',
+			fontFamily: 'Arial',
+			color: '#f39c12',
+			align: 'center',
+		});
+		scoreText.setOrigin(0.5);
+		scoreText.setDepth(102);
+
+		// 完成订单数
+		const ordersText = this.add.text(
+			400,
+			300,
+			`完成订单: ${completedOrders} 单`,
+			{
+				fontSize: '20px',
+				fontFamily: 'Arial',
+				color: '#2ecc71',
+				align: 'center',
+			}
+		);
+		ordersText.setOrigin(0.5);
+		ordersText.setDepth(102);
+
+		// 评价等级
+		let gradeText = '';
+		let gradeColor = '#95a5a6';
+		if (finalScore >= 100) {
+			gradeText = '🏆 厨神级别！';
+			gradeColor = '#f1c40f';
+		} else if (finalScore >= 70) {
+			gradeText = '⭐ 优秀厨师！';
+			gradeColor = '#e67e22';
+		} else if (finalScore >= 40) {
+			gradeText = '👨‍🍳 合格厨师';
+			gradeColor = '#3498db';
+		} else {
+			gradeText = '🥄 新手厨师';
+			gradeColor = '#95a5a6';
+		}
+
+		const gradeDisplay = this.add.text(400, 340, gradeText, {
+			fontSize: '18px',
+			fontFamily: 'Arial',
+			color: gradeColor,
+			align: 'center',
+		});
+		gradeDisplay.setOrigin(0.5);
+		gradeDisplay.setDepth(102);
+
+		// 返回按钮
+		const returnButton = this.add.text(400, 390, '返回菜单', {
+			fontSize: '20px',
+			fontFamily: 'Arial',
+			color: '#ecf0f1',
+			backgroundColor: '#34495e',
+			padding: { x: 20, y: 10 },
+			align: 'center',
+		});
+		returnButton.setOrigin(0.5);
+		returnButton.setDepth(102);
+		returnButton.setInteractive({ useHandCursor: true });
+
+		// 按钮点击事件 - 通过自定义事件通知React组件进行路由导航
+		returnButton.on('pointerdown', () => {
+			// 发送自定义事件给React组件，让其处理路由导航
+			const returnToMenuEvent = new CustomEvent('returnToMenu', {
+				detail: { gameMode: this.gameMode },
+			});
+			window.dispatchEvent(returnToMenuEvent);
+		});
+
+		// 按钮悬停效果
+		returnButton.on('pointerover', () => {
+			returnButton.setStyle({ backgroundColor: '#2c3e50' });
+		});
+
+		returnButton.on('pointerout', () => {
+			returnButton.setStyle({ backgroundColor: '#34495e' });
+		});
+	}
+
+	// 🏆 更新排行榜数据
+	async updateLeaderboard(finalScore, completedOrders) {
+		// 检查场景是否还有效
+		if (!this.scene || this.scene.isDestroyed || !this.scene.isActive()) {
+			console.warn('⚠️ 场景已销毁，跳过排行榜更新');
+			return;
+		}
+
+		console.log('🔍 开始更新排行榜数据...', {
+			finalScore,
+			completedOrders,
+			gameMode: this.gameMode,
+			gameStartTime: this.gameStartTime,
+		});
+
+		try {
+			// 导入云开发SDK
+			console.log('📦 导入云开发SDK...');
+			const cloudbase = await import('../utils/cloudbase.js');
+			console.log('✅ 云开发SDK导入成功');
+
+			// 确保用户已登录
+			console.log('🔐 确保用户已登录...');
+			await cloudbase.default.ensureLogin();
+			console.log('✅ 用户登录验证成功');
+
+			// 计算游戏时间（秒）
+			const gameTime = this.gameStartTime
+				? Math.floor((Date.now() - this.gameStartTime) / 1000)
+				: 0;
+
+			// 确定游戏模式
+			const mode = this.gameMode === 'multiplayer' ? 'multiplayer' : 'single';
+
+			const requestData = {
+				mode: mode,
+				score: finalScore,
+				completedOrders: completedOrders,
+				gameTime: gameTime,
+				nickname: null, // 可以后续添加昵称设置功能
+			};
+
+			console.log('📤 准备调用云函数updateGameScore，参数:', requestData);
+
+			// 调用云函数更新分数
+			const result = await cloudbase.default.callFunction({
+				name: 'updateGameScore',
+				data: requestData,
+			});
+
+			console.log('📥 云函数调用结果:', result);
+
+			if (result.result.success) {
+				console.log('🏆 排行榜更新成功:', result.result.data);
+
+				// 可以在这里显示积分获得提示
+				const pointsEarned = result.result.data.pointsEarned;
+				const newRank = result.result.data.newRank;
+
+				// 显示积分获得消息
+				this.showMessage(
+					`获得 ${pointsEarned} 积分！当前排名: #${newRank}`,
+					0x2ed573
+				);
+			} else {
+				console.error('❌ 排行榜更新失败:', result.result.message);
+			}
+		} catch (error) {
+			console.error('💥 更新排行榜时出错:', error);
+			console.error('错误详情:', {
+				message: error.message,
+				stack: error.stack,
+				name: error.name,
+			});
+			// 不影响游戏结束流程，只记录错误
+		}
+	}
+
+	// 结束多人游戏
+	async endMultiplayerGame(finalScore) {
+		try {
+			const result = await multiplayerManager.endGame(finalScore);
+			console.log('✅ 多人游戏结束通知成功:', result);
+		} catch (error) {
+			console.error('❌ 多人游戏结束通知失败:', error);
+		}
+	}
+
 	update() {
 		if (this.gameEnded) return;
 
@@ -2451,10 +2697,16 @@ export default class GameScene extends Phaser.Scene {
 
 		// 如果玩家手持物品，在角色旁边显示
 		if (this.playerHolding) {
+			// 🔧 修复：确保使用正确的纹理名称
+			let textureKey = this.playerHolding.type;
+			if (textureKey === 'plate') {
+				textureKey = 'plate_sprite'; // 使用plate_sprite纹理而不是不存在的plate纹理
+			}
+
 			this.playerHoldingSprite = this.add.sprite(
 				this.player.x + 20,
 				this.player.y - 10,
-				this.playerHolding.type
+				textureKey
 			);
 			this.playerHoldingSprite.setScale(0.6);
 			this.playerHoldingSprite.setDepth(15);
@@ -3013,7 +3265,7 @@ export default class GameScene extends Phaser.Scene {
 			if (this.playerHolding) {
 				// 玩家手持物品的情况
 				if (
-					this.playerHolding.type === 'plate' ||
+					this.playerHolding.type === 'plate' || // 🔧 修复：更新类型名称
 					this.playerHolding.type === 'dirty_plate'
 				) {
 					// 手持盘子，放下盘子
@@ -3090,7 +3342,7 @@ export default class GameScene extends Phaser.Scene {
 				} else if (contents.length === 0) {
 					// 拾取空的干净盘子 - 记录盘子ID并隐藏盘子
 					this.playerHolding = {
-						type: 'plate',
+						type: 'plate', // 🔧 修复：使用'plate'而不是'clean_plate'，避免与纹理名称混淆
 						plateId: plate.getData('plateId'),
 					};
 
@@ -3181,18 +3433,20 @@ export default class GameScene extends Phaser.Scene {
 		const isWashing = washStation.getData('isWashing');
 		const cleanPlate = washStation.getData('cleanPlate');
 
-		// 移除取回干净盘子的逻辑，因为盘子现在自动回到原位
-		// 保留空格键逻辑以防万一需要向后兼容
+		// 🔧 简化空格键逻辑：由于盘子现在自动回到原位，主要用于清理洗碗槽状态
 		if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
-			if (cleanPlate && !this.playerHolding) {
-				// 清除cleanPlate状态，但不给玩家盘子（因为盘子已经自动回到原位）
-				washStation.setData('cleanPlate', null);
+			if (cleanPlate) {
+				// 清除cleanPlate状态
+				washStation.setData('cleanPlate', false);
 				this.showMessage('洗碗槽已清理完毕', 0x2ed573);
 
 				// 多人游戏：同步洗碗槽状态
 				if (this.gameMode === 'multiplayer') {
 					this.syncWashStationState(washStation);
 				}
+				return;
+			} else {
+				this.showMessage('洗碗槽无需清理', 0xa4b0be);
 				return;
 			}
 		}
@@ -3204,10 +3458,11 @@ export default class GameScene extends Phaser.Scene {
 				return;
 			}
 
-			if (cleanPlate) {
-				this.showMessage('洗碗槽中还有清洗完的盘子，请按空格键清理', 0xffa502);
-				return;
-			}
+			// 🔧 移除cleanPlate检查，因为现在盘子自动回到原位
+			// if (cleanPlate) {
+			// 	this.showMessage('洗碗槽中还有清洗完的盘子，请按空格键清理', 0xffa502);
+			// 	return;
+			// }
 
 			if (this.playerHolding && this.playerHolding.type === 'dirty_plate') {
 				this.startWashing(washStation);
@@ -3430,38 +3685,43 @@ export default class GameScene extends Phaser.Scene {
 
 						this.showMessage('放下了灭火器', 0x2ed573);
 					}
-				} else if (this.playerHolding.type === 'prepared_plate') {
-					// 装好的盘子特殊处理
-					let groundItem = this.groundItems.create(
-						playerX,
-						playerY,
-						'prepared_plate'
-					);
-					groundItem.setData('type', 'prepared_plate');
-					groundItem.setData('contents', this.playerHolding.contents);
-					groundItem.setSize(40, 40); // 调大盘子碰撞尺寸
-					groundItem.setScale(1.3); // 调大盘子显示尺寸
 
-					const contentsDisplay = this.playerHolding.contents
-						.map((item) => this.getItemDisplayName(item))
-						.join(', ');
-					this.showMessage(`放下了装有 ${contentsDisplay} 的盘子`, 0x2ed573);
+					// 清空玩家手持
+					this.playerHolding = null;
+
+					// 发送游戏状态更新事件
+					this.emitGameStateUpdate();
+
+					// 多人游戏：同步手持物品变化
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlayerPosition();
+					}
+				} else if (this.playerHolding.type === 'prepared_plate') {
+					// 装好的盘子特殊处理 - 调用专用方法
+					this.placePreparedPlateOnGround(playerX, playerY);
+				} else if (
+					this.playerHolding.type === 'plate' ||
+					this.playerHolding.type === 'dirty_plate'
+				) {
+					// 🔧 修复：空盘子和脏盘子应该调用placePlateOnGround方法，而不是创建地面物品
+					this.placePlateOnGround(playerX, playerY);
 				} else {
-					// 普通物品
+					// 普通物品（食材等）
+					// 🔧 修复：确保使用正确的纹理名称
+					let textureKey = this.playerHolding.type;
+					if (textureKey === 'plate') {
+						textureKey = 'plate_sprite'; // 使用plate_sprite纹理而不是不存在的plate纹理
+					}
+
 					let groundItem = this.groundItems.create(
 						playerX,
 						playerY,
-						this.playerHolding.type
+						textureKey
 					);
 					groundItem.setData('type', this.playerHolding.type);
 
 					// 根据物品类型设置不同的尺寸
-					if (this.playerHolding.type.includes('plate')) {
-						groundItem.setSize(40, 40); // 盘子类型物品
-						groundItem.setScale(1.3);
-					} else {
-						groundItem.setSize(28, 28); // 普通物品
-					}
+					groundItem.setSize(28, 28); // 普通物品
 
 					// 如果是装好的盘子，保存内容
 					if (this.playerHolding.contents) {
@@ -3473,21 +3733,21 @@ export default class GameScene extends Phaser.Scene {
 						0x2ed573
 					);
 
-					// 多人游戏：同步地面物品添加（灭火器不需要同步地面物品）
+					// 多人游戏：同步地面物品添加
 					if (this.gameMode === 'multiplayer') {
 						this.syncGroundItemAdd(groundItem);
 					}
-				}
 
-				// 清空玩家手持
-				this.playerHolding = null;
+					// 清空玩家手持
+					this.playerHolding = null;
 
-				// 发送游戏状态更新事件
-				this.emitGameStateUpdate();
+					// 发送游戏状态更新事件
+					this.emitGameStateUpdate();
 
-				// 多人游戏：同步手持物品变化
-				if (this.gameMode === 'multiplayer') {
-					this.syncPlayerPosition();
+					// 多人游戏：同步手持物品变化
+					if (this.gameMode === 'multiplayer') {
+						this.syncPlayerPosition();
+					}
 				}
 			} else {
 				this.showMessage('这里无法放置物品', 0xff6b6b);
@@ -3496,6 +3756,12 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	showMessage(text, color = 0xffffff) {
+		// 安全检查：确保场景还有效且this.add存在
+		if (!this.add || this.scene.isDestroyed || !this.scene.isActive()) {
+			console.warn('⚠️ 场景已销毁或无效，跳过显示消息:', text);
+			return;
+		}
+
 		if (this.messageText) {
 			this.messageText.destroy();
 		}
@@ -3825,7 +4091,10 @@ export default class GameScene extends Phaser.Scene {
 			this.cookingParticles.start();
 		}
 
-		this.showMessage(`开始${this.getStationName(stationType)}...`, 0x2ed573);
+		this.showMessage(
+			`开始使用${this.getStationName(stationType)}...`,
+			0x2ed573
+		);
 
 		// 处理完成后的回调
 		const completionTimer = this.time.delayedCall(processTime, () => {
@@ -3946,32 +4215,31 @@ export default class GameScene extends Phaser.Scene {
 		washStation.setData('isWashing', false);
 		washStation.setData('startTime', null); // 清除开始时间
 		washStation.setData('currentUser', null); // 清除当前用户
-		washStation.setData('cleanPlate', true);
 		washStation.setData('washingPlate', null); // 清除正在洗的盘子记录
 
-		// 如果有正在洗的盘子，创建新的干净盘子并销毁脏盘子
+		// 如果有正在洗的盘子，在原始位置创建新的干净盘子并销毁脏盘子
 		if (washingPlate) {
 			const plateId = washingPlate.getData('plateId');
 			const originalPosition = washingPlate.getData('originalPosition');
 
-			// 计算洗碗槽附近的位置（洗碗槽右侧）
-			const cleanPlatePosition = {
-				x: washStation.x + 50, // 洗碗槽右侧50像素
+			// 使用原始位置作为新盘子的生成位置（降低游戏难度）
+			const cleanPlatePosition = originalPosition || {
+				x: washStation.x + 50, // 如果没有原始位置，仍使用洗碗槽右侧作为后备
 				y: washStation.y,
 			};
 
-			console.log('🚿 洗碗完成，创建新的干净盘子:', {
+			console.log('🚿 洗碗完成，在原始位置创建新的干净盘子:', {
 				plateId,
 				originalPosition,
 				cleanPlatePosition,
 				dirtyPlatePosition: { x: washingPlate.x, y: washingPlate.y },
 			});
 
-			// 创建新的干净盘子对象
+			// 创建新的干净盘子对象，使用正确的纹理
 			const cleanPlate = this.plates.create(
 				cleanPlatePosition.x,
 				cleanPlatePosition.y,
-				'plate'
+				'plate_sprite' // 🔧 修复：使用与初始化盘子相同的纹理
 			);
 			cleanPlate.setData('plateType', 'clean');
 			cleanPlate.setData('contents', []);
@@ -4007,8 +4275,12 @@ export default class GameScene extends Phaser.Scene {
 				plateId,
 				newPosition: cleanPlatePosition,
 				plateType: 'clean',
-				texture: 'plate',
+				texture: 'plate_sprite',
+				isOriginalPosition: originalPosition ? true : false,
 			});
+
+			// 🔧 修复：由于盘子已自动回到原位，直接清除cleanPlate状态，避免误提示
+			washStation.setData('cleanPlate', false);
 
 			// 多人游戏：同步盘子状态
 			if (this.gameMode === 'multiplayer') {
@@ -4017,9 +4289,16 @@ export default class GameScene extends Phaser.Scene {
 				});
 			}
 
-			this.showMessage('盘子清洗完成！已放在洗碗槽旁边', 0xffd700);
+			// 根据是否在原始位置显示不同的提示信息
+			if (originalPosition) {
+				this.showMessage('盘子清洗完成！已回到原来的位置', 0xffd700);
+			} else {
+				this.showMessage('盘子清洗完成！已放在洗碗槽旁边', 0xffd700);
+			}
 		} else {
-			this.showMessage('盘子清洗完成！按空格键取回', 0xffd700);
+			// 🔧 修复：如果没有正在洗的盘子，也清除cleanPlate状态
+			washStation.setData('cleanPlate', false);
+			this.showMessage('洗碗槽已清理完毕', 0x2ed573);
 		}
 
 		// 多人游戏：同步洗碗槽状态
@@ -4069,38 +4348,65 @@ export default class GameScene extends Phaser.Scene {
 	placePlateOnGround(x, y) {
 		// 检查放置位置是否合适
 		if (this.isValidPlacementPosition(x, y)) {
-			// 如果手持的是已有盘子，恢复其可见性
+			// 🔧 优化：当放下空盘子时，销毁旧盘子并在新位置创建新盘子
 			if (this.playerHolding.plateId) {
-				const plate = this.findPlateById(this.playerHolding.plateId);
-				if (plate) {
-					// 恢复盘子的可见性和位置
-					plate.setVisible(true);
-					plate.setActive(true);
-					plate.setPosition(x, y);
+				const oldPlate = this.findPlateById(this.playerHolding.plateId);
+				if (oldPlate) {
+					// 保存重要信息
+					const plateId = this.playerHolding.plateId;
+					const originalPosition = oldPlate.getData('originalPosition');
+					const plateType =
+						this.playerHolding.type === 'dirty_plate' ? 'dirty' : 'clean';
+					// 🔧 修复：确保使用与初始化盘子相同的纹理
+					const plateTexture =
+						this.playerHolding.type === 'dirty_plate'
+							? 'dirty_plate'
+							: 'plate_sprite'; // 使用plate_sprite而不是plate
 
-					// 根据手持类型设置正确的纹理和状态
-					if (this.playerHolding.type === 'dirty_plate') {
-						plate.setTexture('dirty_plate');
-						plate.setData('plateType', 'dirty');
-					} else {
-						plate.setTexture('plate');
-						plate.setData('plateType', 'clean');
-					}
-
-					console.log('🍽️ 放下盘子:', {
-						plateId: this.playerHolding.plateId,
-						position: { x, y },
-						plateType: plate.getData('plateType'),
+					console.log('🍽️ 优化盘子放置 - 销毁旧盘子并创建新盘子:', {
+						plateId,
+						oldPosition: { x: oldPlate.x, y: oldPlate.y },
+						newPosition: { x, y },
+						originalPosition,
+						plateType,
+						plateTexture, // 记录使用的纹理
 					});
+
+					// 从盘子池中移除旧盘子
+					const poolIndex = this.platePool.findIndex((p) => p === oldPlate);
+
+					// 销毁旧盘子对象
+					oldPlate.destroy();
+
+					// 在新位置创建新盘子
+					const newPlate = this.plates.create(x, y, plateTexture);
+					newPlate.setData('contents', []);
+					newPlate.setData('plateType', plateType);
+					newPlate.setData('plateId', plateId); // 保持相同的ID
+					newPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
+					newPlate.setSize(40, 40); // 调大盘子碰撞尺寸
+					newPlate.setScale(1.3); // 调大盘子显示尺寸
+					newPlate.setVisible(true);
+					newPlate.setActive(true);
+
+					// 更新盘子池
+					if (poolIndex !== -1) {
+						this.platePool[poolIndex] = newPlate;
+						console.log('🍽️ 更新盘子池（放置盘子）:', {
+							plateId,
+							poolIndex,
+							newPosition: { x, y },
+						});
+					}
 
 					// 多人游戏：同步盘子状态
 					if (this.gameMode === 'multiplayer') {
-						this.syncPlateState(plate);
+						this.syncPlateState(newPlate);
 					}
 				}
 			} else {
 				// 如果没有plateId，创建新盘子（向后兼容）
-				let plateTexture = 'plate';
+				let plateTexture = 'plate_sprite'; // 🔧 修复：使用正确的纹理
 				let plateType = 'clean';
 
 				if (this.playerHolding.type === 'dirty_plate') {
@@ -4118,6 +4424,7 @@ export default class GameScene extends Phaser.Scene {
 				console.log('🍽️ 创建新盘子（向后兼容）:', {
 					position: { x, y },
 					plateType,
+					plateTexture, // 记录使用的纹理
 				});
 			}
 
@@ -4139,27 +4446,54 @@ export default class GameScene extends Phaser.Scene {
 	placePreparedPlateOnGround(x, y) {
 		// 检查放置位置是否合适
 		if (this.isValidPlacementPosition(x, y)) {
-			// 如果手持的装好盘子有plateId，恢复对应的盘子
+			// 🔧 优化：当放下装好的盘子时，销毁旧盘子并在新位置创建新盘子
 			if (this.playerHolding.plateId) {
-				const plate = this.findPlateById(this.playerHolding.plateId);
-				if (plate) {
-					// 恢复盘子的可见性、位置和内容
-					plate.setVisible(true);
-					plate.setActive(true);
-					plate.setPosition(x, y);
-					plate.setData('contents', [...this.playerHolding.contents]); // 恢复盘子内容
-					plate.setData('plateType', 'clean');
-					plate.setTexture('plate');
+				const oldPlate = this.findPlateById(this.playerHolding.plateId);
+				if (oldPlate) {
+					// 保存重要信息
+					const plateId = this.playerHolding.plateId;
+					const originalPosition = oldPlate.getData('originalPosition');
+					const contents = [...this.playerHolding.contents];
 
-					console.log('🍽️ 恢复装好的盘子:', {
-						plateId: this.playerHolding.plateId,
-						position: { x, y },
-						contents: this.playerHolding.contents,
+					console.log('🍽️ 优化装好盘子放置 - 销毁旧盘子并创建新盘子:', {
+						plateId,
+						oldPosition: { x: oldPlate.x, y: oldPlate.y },
+						newPosition: { x, y },
+						originalPosition,
+						contents,
 					});
+
+					// 从盘子池中移除旧盘子
+					const poolIndex = this.platePool.findIndex((p) => p === oldPlate);
+
+					// 销毁旧盘子对象
+					oldPlate.destroy();
+
+					// 在新位置创建新盘子
+					const newPlate = this.plates.create(x, y, 'plate_sprite');
+					newPlate.setData('contents', contents);
+					newPlate.setData('plateType', 'clean');
+					newPlate.setData('plateId', plateId); // 保持相同的ID
+					newPlate.setData('originalPosition', originalPosition); // 保持原始位置信息
+					newPlate.setSize(40, 40); // 调大盘子碰撞尺寸
+					newPlate.setScale(1.3); // 调大盘子显示尺寸
+					newPlate.setVisible(true);
+					newPlate.setActive(true);
+
+					// 更新盘子池
+					if (poolIndex !== -1) {
+						this.platePool[poolIndex] = newPlate;
+						console.log('🍽️ 更新盘子池（放置装好盘子）:', {
+							plateId,
+							poolIndex,
+							newPosition: { x, y },
+							contents,
+						});
+					}
 
 					// 多人游戏：同步盘子状态
 					if (this.gameMode === 'multiplayer') {
-						this.syncPlateState(plate);
+						this.syncPlateState(newPlate);
 					}
 				} else {
 					console.warn('⚠️ 找不到对应的盘子，创建新盘子');

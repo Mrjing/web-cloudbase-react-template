@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import cloudbase from './utils/cloudbase'
 import HomePage from './pages/HomePage'
-import GameHomePage from './pages/GameHomePage'
 import GamePage from './pages/GamePage'
 import GameModePage from './pages/GameModePage'
-import RoomPage from './pages/RoomPage'
+import LeaderboardPage from './pages/LeaderboardPage'
 import Footer from './components/Footer'
 import MultiplayerLobby from './pages/MultiplayerLobby'
 import './App.css'
@@ -50,10 +49,6 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/game" element={<GameHomePage />} />
-            <Route path="/game/single" element={<GamePage />} />
-            <Route path="/game/room/:action" element={<RoomPage />} />
-            <Route path="/game/room/:action/:roomId" element={<RoomPage />} />
             
             {/* 游戏入口 - 模式选择页面 */}
             <Route path="/overcooked-game" element={<GameModePage />} />
@@ -64,6 +59,9 @@ function App() {
             {/* 联机相关 */}
             <Route path="/multiplayer" element={<MultiplayerLobby />} />
             <Route path="/multiplayer-game" element={<GamePage mode="multiplayer" />} />
+            
+            {/* 排行榜 */}
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             
             {/* 可以在这里添加新的路由 */}
             <Route path="*" element={<Navigate to="/" replace />} />

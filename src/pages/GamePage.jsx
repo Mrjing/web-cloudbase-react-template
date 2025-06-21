@@ -52,7 +52,14 @@ const GamePage = ({ mode = 'single' }) => {
       setGameInfo(event.detail);
     };
 
+    // 监听返回菜单事件
+    const handleReturnToMenu = (event) => {
+      console.log('🔄 收到返回菜单事件:', event.detail);
+      handleBackToMenu();
+    };
+
     window.addEventListener('gameStateUpdate', handleGameUpdate);
+    window.addEventListener('returnToMenu', handleReturnToMenu);
 
     return () => {
       if (phaserGameRef.current) {
@@ -60,6 +67,7 @@ const GamePage = ({ mode = 'single' }) => {
         phaserGameRef.current = null;
       }
       window.removeEventListener('gameStateUpdate', handleGameUpdate);
+      window.removeEventListener('returnToMenu', handleReturnToMenu);
     };
   }, [mode]);
 

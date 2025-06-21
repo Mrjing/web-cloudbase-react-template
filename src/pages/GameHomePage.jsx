@@ -30,7 +30,7 @@ const GameHomePage = () => {
           </p>
         </motion.div>
 
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
           {/* 单机模式 */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -46,7 +46,7 @@ const GameHomePage = () => {
             
             <div className="space-y-4">
               <Link 
-                to="/game/single"
+                to="/game-single"
                 className="block w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-xl text-center text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
                 🎮 开始游戏
@@ -79,31 +79,11 @@ const GameHomePage = () => {
             
             <div className="space-y-4">
               <Link 
-                to="/game/room/create"
+                to="/multiplayer"
                 className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-xl text-center text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
-                🏠 创建房间
+                🏠 进入联机大厅
               </Link>
-              
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="输入房间号"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value)}
-                  className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                />
-                <Link 
-                  to={`/game/room/join/${roomCode}`}
-                  className={`px-6 py-3 rounded-lg font-bold transition-all duration-200 ${
-                    roomCode.trim() 
-                      ? 'bg-purple-500 hover:bg-purple-600 text-white' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  加入
-                </Link>
-              </div>
               
               <div className="bg-gray-100 rounded-lg p-4">
                 <h3 className="font-bold text-gray-800 mb-2">联机特色：</h3>
@@ -113,6 +93,38 @@ const GameHomePage = () => {
                   <li>• 房间系统</li>
                   <li>• 语音聊天支持</li>
                 </ul>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* 排行榜入口 */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border-4 border-purple-400"
+          >
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">排行榜</h2>
+              <p className="text-gray-600 mb-6">查看全服最强厨师排名，挑战更高段位！</p>
+              
+              <Link 
+                to="/leaderboard"
+                className="block w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl text-center text-lg transition-all duration-200 transform hover:scale-105 shadow-lg mb-4"
+              >
+                🎯 查看排名
+              </Link>
+              
+              <div className="space-y-2 text-sm">
+                <div className="bg-purple-100 rounded-lg p-3">
+                  <div className="font-bold text-purple-700">单人排行榜</div>
+                  <div className="text-purple-600">个人实力展示</div>
+                </div>
+                <div className="bg-pink-100 rounded-lg p-3">
+                  <div className="font-bold text-pink-700">联机排行榜</div>
+                  <div className="text-pink-600">团队协作能力</div>
+                </div>
               </div>
             </div>
           </motion.div>
