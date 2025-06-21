@@ -211,8 +211,10 @@ async function syncPlayerAction(event) {
 								processingItem: actionData.processingItem || null,
 								isOnFire: actionData.isOnFire || false,
 								contents: actionData.contents || [],
-								currentUser: actionData.isProcessing ? playerId : null,
-								// 确保保留position字段，如果没有则使用actionData中的position
+								currentUser: actionData.currentUser || null,
+								fireCountdown: actionData.fireCountdown || false,
+								fireCountdownStartTime:
+									actionData.fireCountdownStartTime || null,
 								position: station.position || actionData.position,
 								x: station.x || actionData.position.x,
 								y: station.y || actionData.position.y,
@@ -247,7 +249,9 @@ async function syncPlayerAction(event) {
 						processingItem: actionData.processingItem || null,
 						isOnFire: actionData.isOnFire || false,
 						contents: actionData.contents || [],
-						currentUser: actionData.isProcessing ? playerId : null,
+						currentUser: actionData.currentUser || null,
+						fireCountdown: actionData.fireCountdown || false,
+						fireCountdownStartTime: actionData.fireCountdownStartTime || null,
 						updatedBy: playerId,
 						updatedAt: new Date(),
 					};
@@ -288,8 +292,13 @@ async function syncPlayerAction(event) {
 					) {
 						if (index === washStationIndex) {
 							return Object.assign({}, washStation, {
-								isWashing: actionData.isWashing,
-								cleanPlate: actionData.cleanPlate,
+								isWashing: actionData.isWashing || false,
+								cleanPlate: actionData.cleanPlate || false,
+								currentUser: actionData.currentUser || null,
+								startTime: actionData.startTime || null,
+								position: washStation.position || actionData.position,
+								x: washStation.x || actionData.position.x,
+								y: washStation.y || actionData.position.y,
 								updatedBy: playerId,
 								updatedAt: new Date(),
 							});
@@ -312,8 +321,11 @@ async function syncPlayerAction(event) {
 					const newWashStation = {
 						x: actionData.position.x,
 						y: actionData.position.y,
-						isWashing: actionData.isWashing,
-						cleanPlate: actionData.cleanPlate,
+						position: actionData.position,
+						isWashing: actionData.isWashing || false,
+						cleanPlate: actionData.cleanPlate || false,
+						currentUser: actionData.currentUser || null,
+						startTime: actionData.startTime || null,
 						updatedBy: playerId,
 						updatedAt: new Date(),
 					};

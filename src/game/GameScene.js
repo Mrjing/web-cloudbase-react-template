@@ -1147,6 +1147,10 @@ export default class GameScene extends Phaser.Scene {
 					serverData: serverStationData,
 				});
 
+				// 获取更新前的状态
+				const wasProcessing = localStation.getData('isProcessing');
+				const wasFireCountdown = localStation.getData('fireCountdown');
+
 				// 更新工作台状态
 				localStation.setData(
 					'isProcessing',
@@ -1166,6 +1170,14 @@ export default class GameScene extends Phaser.Scene {
 					'currentUser',
 					serverStationData.currentUser || null
 				);
+				localStation.setData(
+					'fireCountdown',
+					serverStationData.fireCountdown || false
+				);
+				localStation.setData(
+					'fireCountdownStartTime',
+					serverStationData.fireCountdownStartTime || null
+				);
 
 				// 如果工作台着火，更新纹理
 				if (
@@ -1180,6 +1192,61 @@ export default class GameScene extends Phaser.Scene {
 				// 更新ID映射
 				this.stationIdMap.set(localStation, stationId);
 
+				// 🔥 新增：为其他玩家重建进度条视觉效果
+				const isProcessing = serverStationData.isProcessing;
+				const isFireCountdown = serverStationData.fireCountdown;
+				const startTime = serverStationData.fireCountdownStartTime;
+				const currentUser = serverStationData.currentUser;
+
+				// 只有当不是当前玩家操作的工作台时，才重建进度条
+				if (currentUser && currentUser !== this.currentPlayerId) {
+					// 处理正常进度条（绿色）
+					if (isProcessing && !wasProcessing) {
+						console.log('🎮 为其他玩家重建正常进度条:', {
+							stationId,
+							currentUser,
+							currentPlayerId: this.currentPlayerId,
+							stationType: serverStationData.stationType,
+						});
+
+						// 根据工作台类型确定处理时间
+						let processTime = 0;
+						const stationType = serverStationData.stationType;
+						if (stationType === 'cutting') {
+							processTime = this.gameConfig.choppingTime;
+						} else if (stationType === 'cooking') {
+							processTime = this.gameConfig.cookingTime;
+						} else if (stationType === 'washing') {
+							processTime = this.gameConfig.washTime;
+						}
+
+						if (processTime > 0) {
+							this.showProcessingEffect(localStation, processTime);
+						}
+					}
+
+					// 处理着火倒计时进度条（红色）
+					if (isFireCountdown && !wasFireCountdown && startTime) {
+						console.log('🔥 为其他玩家重建着火倒计时进度条:', {
+							stationId,
+							currentUser,
+							currentPlayerId: this.currentPlayerId,
+							startTime,
+						});
+
+						// 计算剩余时间
+						const elapsed = this.time.now - startTime;
+						const remainingTime = Math.max(
+							0,
+							this.gameConfig.fireCountdownTime - elapsed
+						);
+
+						if (remainingTime > 0) {
+							this.showFireCountdownEffect(localStation, remainingTime);
+						}
+					}
+				}
+
 				console.log('✅ 工作台状态更新完成:', {
 					stationId,
 					updatedLocalData: {
@@ -1188,6 +1255,7 @@ export default class GameScene extends Phaser.Scene {
 						processingItem: localStation.getData('processingItem'),
 						contents: localStation.getData('contents'),
 						currentUser: localStation.getData('currentUser'),
+						fireCountdown: localStation.getData('fireCountdown'),
 					},
 				});
 			} else {
@@ -1411,6 +1479,9 @@ export default class GameScene extends Phaser.Scene {
 					serverData: serverWashStationData,
 				});
 
+				// 获取更新前的状态
+				const wasWashing = localWashStation.getData('isWashing');
+
 				// 更新洗碗槽状态
 				localWashStation.setData(
 					'isWashing',
@@ -1420,9 +1491,56 @@ export default class GameScene extends Phaser.Scene {
 					'cleanPlate',
 					serverWashStationData.cleanPlate || false
 				);
+				localWashStation.setData(
+					'currentUser',
+					serverWashStationData.currentUser || null
+				);
+				localWashStation.setData(
+					'startTime',
+					serverWashStationData.startTime || null
+				);
+
+				// 🔥 新增：为其他玩家重建洗碗台进度条视觉效果
+				const isWashing = serverWashStationData.isWashing;
+				const currentUser = serverWashStationData.currentUser;
+				const startTime = serverWashStationData.startTime;
+
+				// 只有当不是当前玩家操作的洗碗台时，才重建进度条
+				if (currentUser && currentUser !== this.currentPlayerId) {
+					// 处理清洗进度条
+					if (isWashing && !wasWashing && startTime) {
+						console.log('🚿 为其他玩家重建洗碗台进度条:', {
+							washStationId,
+							currentUser,
+							currentPlayerId: this.currentPlayerId,
+							startTime,
+						});
+
+						// 计算剩余时间
+						const elapsed = this.time.now - startTime;
+						const remainingTime = Math.max(
+							0,
+							this.gameConfig.washTime - elapsed
+						);
+
+						if (remainingTime > 0) {
+							this.showProcessingEffect(localWashStation, remainingTime);
+						}
+					}
+				}
 
 				// 更新ID映射
 				this.washStationIdMap.set(localWashStation, washStationId);
+
+				console.log('✅ 洗碗槽状态更新完成:', {
+					washStationId,
+					updatedLocalData: {
+						isWashing: localWashStation.getData('isWashing'),
+						cleanPlate: localWashStation.getData('cleanPlate'),
+						currentUser: localWashStation.getData('currentUser'),
+						startTime: localWashStation.getData('startTime'),
+					},
+				});
 			} else {
 				console.warn('⚠️ 未找到对应的本地洗碗槽:', {
 					washStationId,
@@ -1706,6 +1824,9 @@ export default class GameScene extends Phaser.Scene {
 		const processingItem = station.getData('processingItem') || null;
 		const isOnFire = station.getData('isOnFire') || false;
 		const contents = station.getData('contents') || [];
+		const fireCountdown = station.getData('fireCountdown') || false;
+		const fireCountdownStartTime =
+			station.getData('fireCountdownStartTime') || null;
 
 		const stationData = {
 			isProcessing: isProcessing,
@@ -1715,6 +1836,9 @@ export default class GameScene extends Phaser.Scene {
 			position: { x: station.x, y: station.y },
 			stationType: station.getData('type'),
 			contents: contents, // 确保包含contents
+			fireCountdown: fireCountdown, // 新增：着火倒计时状态
+			fireCountdownStartTime: fireCountdownStartTime, // 新增：着火倒计时开始时间
+			currentUser: isProcessing ? this.currentPlayerId : null, // 新增：当前使用工作台的玩家ID
 		};
 
 		try {
@@ -1737,10 +1861,15 @@ export default class GameScene extends Phaser.Scene {
 		if (this.gameMode !== 'multiplayer') return;
 
 		const washStationId = this.getWashStationId(washStation);
+		const isWashing = washStation.getData('isWashing') || false;
+		const startTime = washStation.getData('startTime') || null;
+
 		const washStationData = {
-			isWashing: washStation.getData('isWashing') || false,
+			isWashing: isWashing,
 			cleanPlate: washStation.getData('cleanPlate') || false,
 			position: { x: washStation.x, y: washStation.y },
+			currentUser: isWashing ? this.currentPlayerId : null, // 新增：当前使用洗碗台的玩家ID
+			startTime: startTime, // 新增：开始清洗的时间
 		};
 
 		try {
@@ -3776,10 +3905,12 @@ export default class GameScene extends Phaser.Scene {
 		const dirtyPlate = dirtyPlateId ? this.findPlateById(dirtyPlateId) : null;
 
 		washStation.setData('isWashing', true);
+		washStation.setData('startTime', this.time.now); // 新增：记录开始清洗的时间
 		washStation.setData('washingPlate', dirtyPlate); // 记录正在洗的盘子
 
 		console.log('🚿 开始洗碗:', {
 			dirtyPlateId,
+			startTime: this.time.now,
 			dirtyPlate: dirtyPlate
 				? {
 						id: dirtyPlate.getData('plateId'),
@@ -3813,6 +3944,8 @@ export default class GameScene extends Phaser.Scene {
 		const washingPlate = washStation.getData('washingPlate');
 
 		washStation.setData('isWashing', false);
+		washStation.setData('startTime', null); // 清除开始时间
+		washStation.setData('currentUser', null); // 清除当前用户
 		washStation.setData('cleanPlate', true);
 		washStation.setData('washingPlate', null); // 清除正在洗的盘子记录
 
