@@ -681,9 +681,49 @@ class MultiplayerManager {
 		return this.roomData?.status || 'unknown';
 	}
 
-	// 获取游戏状态
+	// 获取游戏状态（本地）
 	getGameState() {
 		return this.roomData?.gameState || null;
+	}
+
+	// 从服务器获取游戏状态
+	async getGameStateFromServer(roomId) {
+		try {
+			if (roomId) {
+				// 如果传入了roomId，从服务器获取
+				const result = await cloudbase.callFunction({
+					name: 'gameRoom',
+					data: {
+						action: 'getRoomInfo',
+						roomId: roomId,
+					},
+				});
+
+				if (result.result && result.result.success) {
+					return {
+						success: true,
+						gameState: result.result.roomData.gameState,
+					};
+				} else {
+					return {
+						success: false,
+						error: result.result ? result.result.error : '获取游戏状态失败',
+					};
+				}
+			} else {
+				// 如果没有传入roomId，返回本地缓存的游戏状态
+				return {
+					success: true,
+					gameState: this.roomData?.gameState || null,
+				};
+			}
+		} catch (error) {
+			console.error('获取游戏状态失败:', error);
+			return {
+				success: false,
+				error: error.message,
+			};
+		}
 	}
 
 	// 获取房间数据
@@ -699,6 +739,92 @@ class MultiplayerManager {
 	// 检查是否是房主
 	isRoomHost() {
 		return this.isHost;
+	}
+
+	// 获取服务器时间（用于时间同步）
+	async getServerTime() {
+		try {
+			const result = await cloudbase.callFunction({
+				name: 'gameSync',
+				data: {
+					action: 'getServerTime',
+				},
+			});
+
+			if (result.result && result.result.success) {
+				return {
+					success: true,
+					serverTime: result.result.serverTime,
+					localTime: new Date().getTime(),
+					offset: result.result.serverTime - new Date().getTime(), // 服务器时间 - 本地时间
+				};
+			}
+
+			return {
+				success: false,
+				error: result.result ? result.result.error : '获取服务器时间失败',
+			};
+		} catch (error) {
+			console.error('获取服务器时间失败:', error);
+			return {
+				success: false,
+				error: error.message,
+			};
+		}
+	}
+
+	// 开始游戏（设置服务器时间戳）
+	async startMultiplayerGame(roomId, gameDuration = 180000) {
+		try {
+			const result = await cloudbase.callFunction({
+				name: 'gameSync',
+				data: {
+					action: 'startGame',
+					roomId: roomId,
+					gameDuration: gameDuration,
+				},
+			});
+
+			if (result.result && result.result.success) {
+				console.log('🎮 多人游戏开始成功:', {
+					gameStartTime: result.result.gameStartTime,
+					gameEndTime: result.result.gameEndTime,
+					gameDuration: result.result.gameDuration,
+				});
+
+				return {
+					success: true,
+					gameStartTime: result.result.gameStartTime,
+					gameEndTime: result.result.gameEndTime,
+					gameDuration: result.result.gameDuration,
+				};
+			}
+
+			return {
+				success: false,
+				error: result.result ? result.result.error : '开始游戏失败',
+			};
+		} catch (error) {
+			console.error('开始多人游戏失败:', error);
+			return {
+				success: false,
+				error: error.message,
+			};
+		}
+	}
+
+	// 计算剩余时间（基于服务器时间戳）
+	calculateTimeLeft(gameStartTime, gameDuration, serverTimeOffset = 0) {
+		const currentTime = new Date().getTime() + serverTimeOffset;
+		const elapsedTime = currentTime - gameStartTime;
+		const timeLeft = Math.max(0, gameDuration - elapsedTime);
+
+		return {
+			timeLeft: timeLeft,
+			timeLeftSeconds: Math.ceil(timeLeft / 1000),
+			elapsedTime: elapsedTime,
+			isGameOver: timeLeft <= 0,
+		};
 	}
 }
 

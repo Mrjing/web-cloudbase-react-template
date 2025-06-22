@@ -156,6 +156,18 @@ export default class GameScene extends Phaser.Scene {
 		// 盘子管理系统 - 新增
 		this.platePool = []; // 盘子池，固定4个盘子
 		this.maxPlates = 4; // 最大盘子数量
+
+		// 多人模式分数同步保护
+		this.isProcessingOrder = false; // 标记当前用户是否正在处理订单完成
+		this.lastOrderCompletionTime = 0; // 上次完成订单的时间戳
+
+		// 时间同步机制（多人模式）
+		this.gameStartTime = null; // 游戏开始时间戳（服务器时间）
+		this.gameEndTime = null; // 游戏结束时间戳（服务器时间）
+		this.gameDuration = 180000; // 游戏总时长（毫秒）
+		this.serverTimeOffset = 0; // 服务器时间偏移量
+		this.lastTimeSync = 0; // 上次时间同步的时间戳
+		this.timeSyncInterval = 30000; // 时间同步间隔（30秒）
 	}
 
 	preload() {
@@ -1091,18 +1103,64 @@ export default class GameScene extends Phaser.Scene {
 	updateGameStateFromServer(gameState) {
 		console.log('🔄 从服务器更新游戏状态:', gameState);
 
+		// 检查是否正在处理订单完成，如果是则跳过分数和订单数的同步
+		const timeSinceLastOrder = Date.now() - this.lastOrderCompletionTime;
+		const shouldSkipScoreSync =
+			this.isProcessingOrder || timeSinceLastOrder < 3000; // 3秒保护期
+
+		if (shouldSkipScoreSync) {
+			console.log('🛡️ 订单处理保护期，跳过分数同步:', {
+				isProcessingOrder: this.isProcessingOrder,
+				timeSinceLastOrder,
+				currentScore: this.score,
+				serverScore: gameState.score,
+			});
+		}
+
 		// 更新基本游戏状态
 		if (gameState.currentOrder) {
 			this.currentOrder = gameState.currentOrder;
 		}
-		if (gameState.score !== undefined) {
-			this.score = gameState.score;
+
+		// 只有在非保护期内才同步分数和订单数
+		if (!shouldSkipScoreSync) {
+			if (gameState.score !== undefined) {
+				this.score = gameState.score;
+			}
+			if (gameState.completedOrders !== undefined) {
+				this.completedOrders = gameState.completedOrders;
+			}
 		}
-		if (gameState.timeLeft !== undefined) {
-			this.timeLeft = gameState.timeLeft;
+
+		// 🕐 时间同步：使用服务器时间戳而不是直接同步timeLeft
+		if (gameState.gameStartTime !== undefined) {
+			this.gameStartTime = gameState.gameStartTime;
+			console.log('🕐 同步游戏开始时间戳:', this.gameStartTime);
 		}
-		if (gameState.completedOrders !== undefined) {
-			this.completedOrders = gameState.completedOrders;
+
+		if (gameState.gameEndTime !== undefined) {
+			this.gameEndTime = gameState.gameEndTime;
+			console.log('🕐 同步游戏结束时间戳:', this.gameEndTime);
+		}
+
+		if (gameState.gameDuration !== undefined) {
+			this.gameDuration = gameState.gameDuration;
+			console.log('🕐 同步游戏总时长:', this.gameDuration);
+		}
+
+		if (gameState.serverTimeOffset !== undefined) {
+			this.serverTimeOffset = gameState.serverTimeOffset;
+			console.log('🕐 同步服务器时间偏移:', this.serverTimeOffset);
+		}
+
+		// 如果是多人模式且已经获取到时间戳，启动基于时间戳的计时器
+		if (
+			this.gameMode === 'multiplayer' &&
+			this.gameStartTime &&
+			!this.gameTimer
+		) {
+			console.log('🕐 非房主获取到时间戳，启动计时器');
+			this.startTimestampBasedTimer();
 		}
 
 		// 同步工作台状态
@@ -1959,7 +2017,7 @@ export default class GameScene extends Phaser.Scene {
 		}
 	}
 
-	startGame() {
+	async startGame() {
 		if (this.gameStarted) return;
 
 		this.gameStarted = true;
@@ -1983,23 +2041,81 @@ export default class GameScene extends Phaser.Scene {
 		}
 
 		if (this.gameMode === 'multiplayer') {
-			// 多人游戏模式：从服务器获取游戏状态
-			const gameState = multiplayerManager.getGameState();
-			if (gameState) {
-				this.currentOrder = gameState.currentOrder;
-				this.score = gameState.score || 0;
-				this.timeLeft = gameState.timeLeft || 180;
-				this.completedOrders = gameState.completedOrders || 0;
+			// 多人游戏模式：使用服务器时间戳同步
+			console.log('🎮 多人模式：启动基于服务器时间戳的时间同步');
+
+			try {
+				// 1. 获取服务器时间偏移
+				await this.syncServerTime();
+
+				// 2. 如果是房主，启动游戏并设置服务器时间戳
+				if (multiplayerManager.isHost) {
+					const startResult = await multiplayerManager.startMultiplayerGame(
+						this.currentRoomId,
+						this.gameDuration
+					);
+
+					if (startResult.success) {
+						this.gameStartTime = startResult.gameStartTime;
+						this.gameEndTime = startResult.gameEndTime;
+						this.gameDuration = startResult.gameDuration;
+						console.log('🎮 房主设置游戏时间戳:', {
+							gameStartTime: this.gameStartTime,
+							gameEndTime: this.gameEndTime,
+							gameDuration: this.gameDuration,
+						});
+					} else {
+						console.error('❌ 房主启动游戏失败:', startResult.error);
+						// 降级到本地时间
+						this.gameStartTime = Date.now();
+						this.gameEndTime = this.gameStartTime + this.gameDuration;
+					}
+				} else {
+					// 非房主等待从服务器获取游戏时间戳
+					console.log('🎮 非房主等待服务器时间戳...');
+					// 时间戳会通过 updateGameStateFromServer 获取
+				}
+
+				// 3. 启动定期时间同步
+				this.startTimeSync();
+
+				// 4. 启动基于时间戳的计时器
+				this.startTimestampBasedTimer();
+			} catch (error) {
+				console.error('❌ 多人模式时间同步初始化失败:', error);
+				// 降级到本地时间
+				this.gameStartTime = Date.now();
+				this.gameEndTime = this.gameStartTime + this.gameDuration;
+				this.startTimer();
 			}
+
+			// 多人游戏：从服务器获取游戏状态
+			const gameState = await multiplayerManager.getGameStateFromServer(
+				this.currentRoomId
+			);
+			if (gameState && gameState.success) {
+				this.updateGameStateFromServer(gameState.gameState);
+			}
+
+			// 启动多人同步
+			this.startMultiplayerSync();
 		} else {
-			// 单人游戏模式：生成第一个订单
-			this.generateOrder();
+			// 单人游戏模式：使用本地时间
+			this.startTimer();
 		}
 
-		// 启动计时器
-		this.startTimer();
+		// 生成初始订单
+		this.generateOrder();
 
-		this.showMessage('游戏开始！制作美味料理吧！', 0x2ed573);
+		// 启动订单计时器
+		this.startOrderTimer();
+
+		console.log('🎮 游戏开始:', {
+			gameMode: this.gameMode,
+			gameStartTime: this.gameStartTime,
+			gameEndTime: this.gameEndTime,
+			gameDuration: this.gameDuration,
+		});
 	}
 
 	createKitchenLayout() {
@@ -4002,9 +4118,9 @@ export default class GameScene extends Phaser.Scene {
 			this.clearMatchingPlates(plateContents);
 		}
 
-		// 增加分数
-		this.score += this.currentOrder.points;
-		this.completedOrders++;
+		// 计算新的分数和订单数
+		const newScore = this.score + this.currentOrder.points;
+		const newCompletedOrders = this.completedOrders + 1;
 
 		// 创建完成效果
 		this.createOrderCompletionEffect(500, 280); // 出餐口位置
@@ -4024,15 +4140,94 @@ export default class GameScene extends Phaser.Scene {
 			this.orderTimer = null;
 		}
 
-		// 发送游戏状态更新事件
-		this.emitGameStateUpdate();
+		if (this.gameMode === 'multiplayer') {
+			// 多人模式：通过云函数同步分数到服务器
+			console.log('🎮 多人模式：同步分数到服务器', {
+				currentScore: this.score,
+				orderPoints: this.currentOrder.points,
+				newScore: newScore,
+				newCompletedOrders: newCompletedOrders,
+			});
 
-		// 生成新订单
-		this.time.delayedCall(2000, () => {
-			if (!this.gameEnded) {
-				this.generateOrder();
-			}
-		});
+			// 设置订单处理标志，防止被服务器状态覆盖
+			this.isProcessingOrder = true;
+			this.lastOrderCompletionTime = Date.now();
+
+			// 调用云函数完成订单，服务器会累加分数并生成新订单
+			multiplayerManager
+				.completeOrder({
+					points: this.currentOrder.points,
+					orderId: this.currentOrder.id,
+					playerId: this.currentPlayerId,
+				})
+				.then((result) => {
+					if (result && result.success) {
+						console.log('✅ 服务器分数同步成功:', {
+							serverScore: result.newScore,
+							serverCompletedOrders: result.newCompletedOrders,
+							newOrder: result.newOrder,
+						});
+
+						// 更新本地状态为服务器返回的最新状态
+						this.score = result.newScore;
+						this.completedOrders = result.newCompletedOrders;
+						this.currentOrder = result.newOrder;
+
+						// 重新启动订单计时器
+						if (result.newOrder && !this.gameEnded) {
+							this.startOrderTimer();
+						}
+
+						// 清除订单处理标志
+						this.isProcessingOrder = false;
+					} else {
+						console.error('❌ 服务器分数同步失败:', result);
+						// 如果服务器同步失败，仍然更新本地状态
+						this.score = newScore;
+						this.completedOrders = newCompletedOrders;
+
+						// 生成新订单（本地备用方案）
+						this.time.delayedCall(2000, () => {
+							if (!this.gameEnded) {
+								this.generateOrder();
+							}
+						});
+
+						// 清除订单处理标志
+						this.isProcessingOrder = false;
+					}
+				})
+				.catch((error) => {
+					console.error('❌ 调用完成订单云函数失败:', error);
+					// 如果云函数调用失败，仍然更新本地状态
+					this.score = newScore;
+					this.completedOrders = newCompletedOrders;
+
+					// 生成新订单（本地备用方案）
+					this.time.delayedCall(2000, () => {
+						if (!this.gameEnded) {
+							this.generateOrder();
+						}
+					});
+
+					// 清除订单处理标志
+					this.isProcessingOrder = false;
+				});
+		} else {
+			// 单机模式：直接更新本地分数
+			this.score = newScore;
+			this.completedOrders = newCompletedOrders;
+
+			// 发送游戏状态更新事件
+			this.emitGameStateUpdate();
+
+			// 生成新订单
+			this.time.delayedCall(2000, () => {
+				if (!this.gameEnded) {
+					this.generateOrder();
+				}
+			});
+		}
 	}
 
 	processItemAtStation(station, stationType) {
@@ -5146,7 +5341,100 @@ export default class GameScene extends Phaser.Scene {
 			this.syncTimer = null;
 		}
 
+		// 清理时间同步定时器
+		if (this.timeSyncTimer) {
+			this.timeSyncTimer.remove();
+			this.timeSyncTimer = null;
+			console.log('🕐 时间同步定时器已清理');
+		}
+
 		// 调用父类的destroy方法
 		super.destroy();
+	}
+
+	// 同步服务器时间偏移
+	async syncServerTime() {
+		try {
+			const timeSync = await multiplayerManager.getServerTime();
+			if (timeSync.success) {
+				this.serverTimeOffset = timeSync.offset;
+				this.lastTimeSync = Date.now();
+				console.log('🕐 服务器时间同步成功:', {
+					serverTime: timeSync.serverTime,
+					localTime: timeSync.localTime,
+					offset: this.serverTimeOffset,
+				});
+			} else {
+				console.warn('⚠️ 服务器时间同步失败:', timeSync.error);
+				this.serverTimeOffset = 0;
+			}
+		} catch (error) {
+			console.error('❌ 服务器时间同步异常:', error);
+			this.serverTimeOffset = 0;
+		}
+	}
+
+	// 启动定期时间同步
+	startTimeSync() {
+		if (this.timeSyncTimer) {
+			this.timeSyncTimer.remove();
+		}
+
+		this.timeSyncTimer = this.time.addEvent({
+			delay: this.timeSyncInterval,
+			callback: () => {
+				this.syncServerTime();
+			},
+			loop: true,
+		});
+
+		console.log(
+			'🕐 启动定期时间同步，间隔:',
+			this.timeSyncInterval / 1000,
+			'秒'
+		);
+	}
+
+	// 启动基于时间戳的计时器
+	startTimestampBasedTimer() {
+		if (this.gameTimer) {
+			this.gameTimer.remove();
+		}
+
+		this.gameTimer = this.time.addEvent({
+			delay: 100, // 每100ms更新一次
+			callback: () => {
+				this.updateTimestampBasedTimer();
+			},
+			loop: true,
+		});
+
+		console.log('⏰ 启动基于时间戳的计时器');
+	}
+
+	// 更新基于时间戳的计时器
+	updateTimestampBasedTimer() {
+		if (!this.gameStartTime || this.gameEnded) {
+			return;
+		}
+
+		// 使用服务器时间偏移计算当前时间
+		const currentTime = Date.now() + this.serverTimeOffset;
+		const elapsedTime = currentTime - this.gameStartTime;
+		const timeLeft = Math.max(0, this.gameDuration - elapsedTime);
+
+		// 更新时间（秒）
+		this.timeLeft = Math.ceil(timeLeft / 1000);
+
+		// 检查游戏是否结束
+		if (timeLeft <= 0 && !this.gameEnded) {
+			console.log('⏰ 基于时间戳的游戏时间结束');
+			this.gameOver();
+		}
+	}
+
+	// 获取同步后的当前时间
+	getSyncedCurrentTime() {
+		return Date.now() + this.serverTimeOffset;
 	}
 }

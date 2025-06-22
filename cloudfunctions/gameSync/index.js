@@ -467,6 +467,24 @@ async function syncPlayerAction(event) {
 	}
 }
 
+// 获取服务器时间（用于时间同步）
+async function getServerTime(event) {
+	try {
+		const serverTime = new Date().getTime();
+		return {
+			success: true,
+			serverTime: serverTime,
+			timestamp: new Date(),
+		};
+	} catch (error) {
+		console.error('获取服务器时间失败:', error);
+		return {
+			success: false,
+			error: error.message,
+		};
+	}
+}
+
 // 更新游戏状态
 async function updateGameState(event) {
 	const roomId = event.roomId;
@@ -492,6 +510,45 @@ async function updateGameState(event) {
 		};
 	} catch (error) {
 		console.error('更新游戏状态失败:', error);
+		return {
+			success: false,
+			error: error.message,
+		};
+	}
+}
+
+// 开始游戏（设置游戏开始时间）
+async function startGame(event) {
+	const roomId = event.roomId;
+	const gameDuration = event.gameDuration || 180000; // 默认3分钟（180秒）
+
+	try {
+		const gameStartTime = new Date().getTime();
+		const gameEndTime = gameStartTime + gameDuration;
+
+		await db
+			.collection('game_rooms')
+			.doc(roomId)
+			.update({
+				data: {
+					status: 'playing',
+					'gameState.gameStartTime': gameStartTime,
+					'gameState.gameEndTime': gameEndTime,
+					'gameState.gameDuration': gameDuration,
+					'gameState.serverTimeOffset': 0, // 服务器时间偏移
+					updatedAt: new Date(),
+				},
+			});
+
+		return {
+			success: true,
+			gameStartTime: gameStartTime,
+			gameEndTime: gameEndTime,
+			gameDuration: gameDuration,
+			message: '游戏开始',
+		};
+	} catch (error) {
+		console.error('开始游戏失败:', error);
 		return {
 			success: false,
 			error: error.message,
@@ -658,6 +715,10 @@ exports.main = async function (event, context) {
 			return await endGame(event);
 		case 'getActionHistory':
 			return await getActionHistory(event);
+		case 'getServerTime':
+			return await getServerTime(event);
+		case 'startGame':
+			return await startGame(event);
 		default:
 			return {
 				success: false,
