@@ -46,6 +46,9 @@ import serving_station_img from '../assets/item/出餐台.png';
 import wash_station_img from '../assets/item/洗碗台.png';
 import plate_sprite_img from '../assets/item/盘子.png';
 
+// 音频资源
+import bgm_audio from '../assets/sound/厨房大作战.mp3';
+
 export default class GameScene extends Phaser.Scene {
 	constructor() {
 		super({ key: 'GameScene' });
@@ -85,6 +88,9 @@ export default class GameScene extends Phaser.Scene {
 		this.playerHoldingSprite = null;
 		this.plateContentsSprites = [];
 		this.stationContentsSprites = [];
+
+		// 音频元素
+		this.bgmSound = null;
 
 		// 游戏配置
 		this.gameConfig = {
@@ -199,6 +205,9 @@ export default class GameScene extends Phaser.Scene {
 		this.load.image('serving_station', serving_station_img);
 		this.load.image('wash_station', wash_station_img);
 		this.load.image('plate_sprite', plate_sprite_img);
+
+		// 加载音频资源
+		this.load.audio('bgm', bgm_audio);
 
 		// 创建食材和其他物品的像素艺术图形
 		this.createPixelArt();
@@ -1959,6 +1968,20 @@ export default class GameScene extends Phaser.Scene {
 		// 🏆 记录游戏开始时间，用于计算游戏时长
 		this.gameStartTime = Date.now();
 
+		// 播放背景音乐
+		if (!this.bgmSound) {
+			this.bgmSound = this.sound.add('bgm', {
+				volume: 0.3, // 设置音量为30%
+				loop: true, // 循环播放
+			});
+		}
+
+		// 开始播放BGM
+		if (this.bgmSound && !this.bgmSound.isPlaying) {
+			this.bgmSound.play();
+			console.log('🎵 开始播放背景音乐');
+		}
+
 		if (this.gameMode === 'multiplayer') {
 			// 多人游戏模式：从服务器获取游戏状态
 			const gameState = multiplayerManager.getGameState();
@@ -2435,6 +2458,12 @@ export default class GameScene extends Phaser.Scene {
 		if (this.gameEnded) return;
 
 		this.gameEnded = true;
+
+		// 停止背景音乐
+		if (this.bgmSound && this.bgmSound.isPlaying) {
+			this.bgmSound.stop();
+			console.log('🎵 停止背景音乐');
+		}
 
 		// 停止计时器
 		if (this.gameTimer) {
@@ -5087,5 +5116,37 @@ export default class GameScene extends Phaser.Scene {
 		return this.plates.children.entries.find(
 			(plate) => plate.getData('plateId') === id
 		);
+	}
+
+	// 场景销毁时清理资源
+	destroy() {
+		// 停止并销毁背景音乐
+		if (this.bgmSound) {
+			if (this.bgmSound.isPlaying) {
+				this.bgmSound.stop();
+			}
+			this.bgmSound.destroy();
+			this.bgmSound = null;
+			console.log('🎵 背景音乐资源已清理');
+		}
+
+		// 清理计时器
+		if (this.gameTimer) {
+			this.gameTimer.remove();
+			this.gameTimer = null;
+		}
+
+		if (this.orderTimer) {
+			this.orderTimer.remove();
+			this.orderTimer = null;
+		}
+
+		if (this.syncTimer) {
+			this.syncTimer.remove();
+			this.syncTimer = null;
+		}
+
+		// 调用父类的destroy方法
+		super.destroy();
 	}
 }
